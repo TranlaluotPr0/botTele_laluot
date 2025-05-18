@@ -1,5 +1,5 @@
 import os
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 )
@@ -13,7 +13,8 @@ user_files = {}
 
 # ====== LỆNH ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Chào bạn! Gửi file để lưu trữ.\nDùng /help để xem hướng dẫn.")
+    if update.message:
+        await update.message.reply_text("👋 Chào bạn! Gửi file để lưu trữ.\nDùng /help để xem hướng dẫn.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -74,7 +75,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = len(user_files.get(user_id, []))
     await update.message.reply_text(f"📊 Bạn đã lưu {count} file.")
 
-# ====== XỬ LÝ FILE (đủ loại & forward) ======
+# ====== XỬ LÝ FILE ======
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
@@ -136,11 +137,19 @@ def run(): app.run(host='0.0.0.0', port=8080)
 Thread(target=run).start()
 
 # ====== KHỞI ĐỘNG BOT ======
-if not BOT_TOKEN:
-    print("❌ Lỗi: BOT_TOKEN chưa được thiết lập trong biến môi trường.")
-else:
-    print(f"🔑 TOKEN ĐANG DÙNG: {BOT_TOKEN[:10]}... (ẩn bớt)")
+async def main():
+    print("🔑 Đang chạy bot Telegram...")
     app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Gán menu lệnh lại
+    await app_bot.bot.set_my_commands([
+        BotCommand("start", "Khởi động bot"),
+        BotCommand("help", "Hướng dẫn sử dụng"),
+        BotCommand("files", "Danh sách file đã lưu"),
+        BotCommand("delete", "Xoá file theo ID"),
+        BotCommand("stats", "Thống kê số file đã lưu"),
+    ])
+
     app_bot.add_handler(CommandHandler("start", start))
     app_bot.add_handler(CommandHandler("help", help_command))
     app_bot.add_handler(CommandHandler("files", files))
@@ -148,5 +157,10 @@ else:
     app_bot.add_handler(CommandHandler("stats", stats))
     app_bot.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE, handle_file))
 
-    print("🤖 Bot đang chạy...")
-    app_bot.run_polling()
+    await app_bot.run_polling()
+
+if not BOT_TOKEN:
+    print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
+else:
+    import asyncio
+    asyncio.run(main())
