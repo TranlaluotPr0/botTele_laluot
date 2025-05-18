@@ -1,5 +1,5 @@
 import os
-from telegram import Update, BotCommand
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 )
@@ -8,12 +8,7 @@ from threading import Thread
 from datetime import datetime
 import pytz
 
-# 🔐 Lấy token từ biến môi trường
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-
-# 🔍 Debug xem biến có đúng không (chỉ in 1 lần, sau đó nên xóa)
-print("🔑 TOKEN ĐANG DÙNG:", BOT_TOKEN)
-
 user_files = {}
 
 # ====== LỆNH ======
@@ -79,13 +74,14 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = len(user_files.get(user_id, []))
     await update.message.reply_text(f"📊 Bạn đã lưu {count} file.")
 
-# ====== XỬ LÝ FILE ======
+# ====== XỬ LÝ FILE (đủ loại & forward) ======
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
 
     msg = update.message
     user_id = update.effective_user.id
+
     file = msg.document or msg.audio or msg.video or msg.voice
     file_type = "file"
 
@@ -108,8 +104,13 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_id = file.file_id
     tz = pytz.timezone("Asia/Ho_Chi_Minh")
     timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-    size_kb = round((size_bytes or 0) / 1024, 2)
-    size_str = f"{round(size_kb / 1024, 2)} MB" if size_kb > 1024 else f"{size_kb} KB" if size_kb else "Không xác định"
+
+    if size_bytes:
+        size_kb = round(size_bytes / 1024, 2)
+        size_str = f"{round(size_kb / 1024, 2)} MB" if size_kb > 1024 else f"{size_kb} KB"
+    else:
+        size_kb = 0
+        size_str = "Không xác định"
 
     user_files.setdefault(user_id, []).append({
         "id": file_id,
@@ -130,28 +131,22 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = Flask('')
 @app.route('/')
 def home(): return "Bot is running."
+
 def run(): app.run(host='0.0.0.0', port=8080)
 Thread(target=run).start()
 
 # ====== KHỞI ĐỘNG BOT ======
-app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
-app_bot.add_handler(CommandHandler("start", start))
-app_bot.add_handler(CommandHandler("help", help_command))
-app_bot.add_handler(CommandHandler("files", files))
-app_bot.add_handler(CommandHandler("delete", delete))
-app_bot.add_handler(CommandHandler("stats", stats))
-app_bot.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE, handle_file))
+if not BOT_TOKEN:
+    print("❌ Lỗi: BOT_TOKEN chưa được thiết lập trong biến môi trường.")
+else:
+    print(f"🔑 TOKEN ĐANG DÙNG: {BOT_TOKEN[:10]}... (ẩn bớt)")
+    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+    app_bot.add_handler(CommandHandler("start", start))
+    app_bot.add_handler(CommandHandler("help", help_command))
+    app_bot.add_handler(CommandHandler("files", files))
+    app_bot.add_handler(CommandHandler("delete", delete))
+    app_bot.add_handler(CommandHandler("stats", stats))
+    app_bot.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE, handle_file))
 
-# ====== RESET MENU ======
-async def set_commands():
-    await app_bot.bot.set_my_commands([
-        BotCommand("start", "Khởi động bot"),
-        BotCommand("help", "Xem hướng dẫn"),
-        BotCommand("files", "Danh sách file"),
-        BotCommand("delete", "Xoá file theo ID"),
-        BotCommand("stats", "Thống kê file đã lưu")
-    ])
-app_bot.post_init = set_commands
-
-print("🤖 Bot đang chạy...")
-app_bot.run_polling()
+    print("🤖 Bot đang chạy...")
+    app_bot.run_polling()
