@@ -179,4 +179,6 @@ if __name__ == '__main__':
         print("❌ Lỗi: Chưa thiết lập BOT_TOKEN!")
     else:
         print("⚙️ Bắt đầu khởi chạy bot...")
-        asyncio.run(run_bot())  # ✅ đảm bảo bot chạy polling đúng
+        loop = asyncio.get_event_loop()
+        loop.create_task(run_bot())
+        loop.run_forever()
