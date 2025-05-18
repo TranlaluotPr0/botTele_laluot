@@ -1,5 +1,5 @@
 import os
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 )
@@ -8,9 +8,8 @@ from threading import Thread
 from datetime import datetime
 import pytz
 
-BOT_TOKEN = os.environ.get("TELEGRAM_TOKEN")  # ✅ Bảo mật hơn
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 user_files = {}
-
 
 # ====== LỆNH ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -20,6 +19,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📖 Hướng dẫn:\n"
         "/start - Khởi động bot\n"
+        "/help - Xem hướng dẫn\n"
         "/files - Danh sách tất cả file\n"
         "/files YYYY-MM-DD - Lọc file theo ngày\n"
         "/delete <file_id> - Xoá file khỏi danh sách\n"
@@ -75,7 +75,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = len(user_files.get(user_id, []))
     await update.message.reply_text(f"📊 Bạn đã lưu {count} file.")
 
-# ====== XỬ LÝ FILE (đủ loại & forward) ======
+# ====== XỬ LÝ FILE ======
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
@@ -83,7 +83,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     user_id = update.effective_user.id
 
-    # Lấy file gửi hoặc forward (ưu tiên document/audio/video...)
     file = msg.document or msg.audio or msg.video or msg.voice
     file_type = "file"
 
@@ -107,12 +106,8 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tz = pytz.timezone("Asia/Ho_Chi_Minh")
     timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    if size_bytes:
-        size_kb = round(size_bytes / 1024, 2)
-        size_str = f"{round(size_kb / 1024, 2)} MB" if size_kb > 1024 else f"{size_kb} KB"
-    else:
-        size_kb = 0
-        size_str = "Không xác định"
+    size_kb = round((size_bytes or 0) / 1024, 2)
+    size_str = f"{round(size_kb / 1024, 2)} MB" if size_kb > 1024 else f"{size_kb} KB" if size_kb else "Không xác định"
 
     user_files.setdefault(user_id, []).append({
         "id": file_id,
@@ -133,7 +128,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = Flask('')
 @app.route('/')
 def home(): return "Bot is running."
-
 def run(): app.run(host='0.0.0.0', port=8080)
 Thread(target=run).start()
 
@@ -145,6 +139,18 @@ app_bot.add_handler(CommandHandler("files", files))
 app_bot.add_handler(CommandHandler("delete", delete))
 app_bot.add_handler(CommandHandler("stats", stats))
 app_bot.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE, handle_file))
+
+# Reset menu lệnh hiển thị
+async def set_commands():
+    await app_bot.bot.set_my_commands([
+        BotCommand("start", "Khởi động bot"),
+        BotCommand("help", "Xem hướng dẫn"),
+        BotCommand("files", "Danh sách file"),
+        BotCommand("delete", "Xoá file theo ID"),
+        BotCommand("stats", "Thống kê file đã lưu")
+    ])
+
+app_bot.post_init = set_commands
 
 print("🤖 Bot đang chạy...")
 app_bot.run_polling()
