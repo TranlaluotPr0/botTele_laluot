@@ -140,8 +140,8 @@ Thread(target=run).start()
 async def main():
     print("🔑 Đang chạy bot Telegram...")
     app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+    await app_bot.initialize()  # Cần để bot sẵn sàng
 
-    # Gán menu lệnh lại
     await app_bot.bot.set_my_commands([
         BotCommand("start", "Khởi động bot"),
         BotCommand("help", "Hướng dẫn sử dụng"),
