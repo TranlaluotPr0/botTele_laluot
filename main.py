@@ -10,7 +10,7 @@ import pytz
 import asyncio
 
 # ⚠️ ĐÃ GẮN TRỰC TIẾP TOKEN (KHÔNG AN TOÀN - CHỈ DÙNG TẠM)
-BOT_TOKEN = "7666869071:AAEbUSJdxWAAqZp3yNO58jF6LROd0tgSFpw"
+BOT_TOKEN = "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4"
 
 user_files = {}
 
