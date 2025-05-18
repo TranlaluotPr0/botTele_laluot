@@ -130,12 +130,12 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ====== KEEP ALIVE ======
-app = Flask('')
+app = Flask(__name__)
 @app.route('/')
 def home(): return "Bot is running."
 
-def run(): app.run(host='0.0.0.0', port=8080)
-Thread(target=run).start()
+def run_flask(): app.run(host='0.0.0.0', port=8080)
+Thread(target=run_flask).start()
 
 # ====== KHỞI ĐỘNG BOT ======
 async def run_bot():
@@ -162,7 +162,10 @@ async def run_bot():
 
     await app_bot.run_polling()
 
-if not BOT_TOKEN:
-    print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
-else:
-    asyncio.run(run_bot())
+# === SỬ DỤNG EVENT LOOP HIỆN CÓ (KHÔNG DÙNG asyncio.run) ===
+if __name__ == '__main__':
+    if not BOT_TOKEN:
+        print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
+    else:
+        loop = asyncio.get_event_loop()
+        loop.create_task(run_bot())  # chạy bot song song
