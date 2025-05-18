@@ -8,7 +8,12 @@ from threading import Thread
 from datetime import datetime
 import pytz
 
+# 🔐 Lấy token từ biến môi trường
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+
+# 🔍 Debug xem biến có đúng không (chỉ in 1 lần, sau đó nên xóa)
+print("🔑 TOKEN ĐANG DÙNG:", BOT_TOKEN)
+
 user_files = {}
 
 # ====== LỆNH ======
@@ -19,7 +24,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📖 Hướng dẫn:\n"
         "/start - Khởi động bot\n"
-        "/help - Xem hướng dẫn\n"
         "/files - Danh sách tất cả file\n"
         "/files YYYY-MM-DD - Lọc file theo ngày\n"
         "/delete <file_id> - Xoá file khỏi danh sách\n"
@@ -82,7 +86,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = update.message
     user_id = update.effective_user.id
-
     file = msg.document or msg.audio or msg.video or msg.voice
     file_type = "file"
 
@@ -105,7 +108,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_id = file.file_id
     tz = pytz.timezone("Asia/Ho_Chi_Minh")
     timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
     size_kb = round((size_bytes or 0) / 1024, 2)
     size_str = f"{round(size_kb / 1024, 2)} MB" if size_kb > 1024 else f"{size_kb} KB" if size_kb else "Không xác định"
 
@@ -140,7 +142,7 @@ app_bot.add_handler(CommandHandler("delete", delete))
 app_bot.add_handler(CommandHandler("stats", stats))
 app_bot.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE, handle_file))
 
-# Reset menu lệnh hiển thị
+# ====== RESET MENU ======
 async def set_commands():
     await app_bot.bot.set_my_commands([
         BotCommand("start", "Khởi động bot"),
@@ -149,7 +151,6 @@ async def set_commands():
         BotCommand("delete", "Xoá file theo ID"),
         BotCommand("stats", "Thống kê file đã lưu")
     ])
-
 app_bot.post_init = set_commands
 
 print("🤖 Bot đang chạy...")
