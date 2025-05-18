@@ -9,18 +9,18 @@ from datetime import datetime
 import pytz
 import asyncio
 
-# ⚠️ ĐÃ GẮN TRỰC TIẾP TOKEN (KHÔNG AN TOÀN - CHỈ DÙNG TẠM)
+# ⚠️ GẮN TRỰC TIẾP TOKEN (chỉ nên dùng tạm)
 BOT_TOKEN = "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4"
-
 user_files = {}
 
 # ====== LỆNH ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("📥 Nhận /start từ:", update.effective_user.id)
+    print("📥 Nhận lệnh /start từ:", update.effective_user.username)
     if update.message:
         await update.message.reply_text("👋 Chào bạn! Gửi file để lưu trữ.\nDùng /help để xem hướng dẫn.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("📥 Nhận lệnh /help từ:", update.effective_user.username)
     await update.message.reply_text(
         "📖 Hướng dẫn:\n"
         "/start - Khởi động bot\n"
@@ -132,6 +132,11 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ("\n⚠️ Ảnh gửi dạng *photo* hoặc forward có thể bị nén, không giữ tên/dung lượng gốc." if not is_original else "")
     )
 
+# ====== DEBUG TOÀN BỘ UPDATE ======
+async def log_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("📩 Nhận update từ Telegram:")
+    print(update)
+
 # ====== KEEP ALIVE ======
 app = Flask(__name__)
 @app.route('/')
@@ -164,9 +169,11 @@ async def run_bot():
         handle_file
     ))
 
+    app_bot.add_handler(MessageHandler(filters.ALL, log_all))  # log mọi update để debug
+
     await app_bot.run_polling()
 
-# === CHẠY BOT KHÔNG DÙNG asyncio.run() ===
+# === CHẠY KHÔNG DÙNG asyncio.run() ===
 if __name__ == '__main__':
     if not BOT_TOKEN:
         print("❌ Lỗi: Chưa thiết lập BOT_TOKEN!")
