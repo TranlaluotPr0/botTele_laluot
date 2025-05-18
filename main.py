@@ -9,11 +9,14 @@ from datetime import datetime
 import pytz
 import asyncio
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+# ⚠️ ĐÃ GẮN TRỰC TIẾP TOKEN (KHÔNG AN TOÀN - CHỈ DÙNG TẠM)
+BOT_TOKEN = "7666869071:AAEbUSJdxWAAqZp3yNO58jF6LROd0tgSFpw"
+
 user_files = {}
 
 # ====== LỆNH ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("📥 Nhận /start từ:", update.effective_user.id)
     if update.message:
         await update.message.reply_text("👋 Chào bạn! Gửi file để lưu trữ.\nDùng /help để xem hướng dẫn.")
 
@@ -155,17 +158,18 @@ async def run_bot():
     app_bot.add_handler(CommandHandler("files", files))
     app_bot.add_handler(CommandHandler("delete", delete))
     app_bot.add_handler(CommandHandler("stats", stats))
+
     app_bot.add_handler(MessageHandler(
-        filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE,
+        filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE | filters.TEXT,
         handle_file
     ))
 
     await app_bot.run_polling()
 
-# === SỬ DỤNG EVENT LOOP HIỆN CÓ (KHÔNG DÙNG asyncio.run) ===
+# === CHẠY BOT KHÔNG DÙNG asyncio.run() ===
 if __name__ == '__main__':
     if not BOT_TOKEN:
-        print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
+        print("❌ Lỗi: Chưa thiết lập BOT_TOKEN!")
     else:
         loop = asyncio.get_event_loop()
-        loop.create_task(run_bot())  # chạy bot song song
+        loop.create_task(run_bot())
