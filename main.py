@@ -7,6 +7,7 @@ from flask import Flask
 from threading import Thread
 from datetime import datetime
 import pytz
+import asyncio
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 user_files = {}
@@ -140,7 +141,7 @@ Thread(target=run).start()
 async def main():
     print("🔑 Đang chạy bot Telegram...")
     app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
-    await app_bot.initialize()  # Cần để bot sẵn sàng
+    await app_bot.initialize()
 
     await app_bot.bot.set_my_commands([
         BotCommand("start", "Khởi động bot"),
@@ -162,5 +163,15 @@ async def main():
 if not BOT_TOKEN:
     print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
 else:
-    import asyncio
-    asyncio.run(main())
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            print("🔄 Loop đang chạy → tạo task chạy bot.")
+            loop.create_task(main())
+        else:
+            loop.run_until_complete(main())
+    except RuntimeError:
+        print("⚠️ Không thể lấy event loop, tạo mới.")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
