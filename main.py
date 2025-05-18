@@ -138,7 +138,7 @@ def run(): app.run(host='0.0.0.0', port=8080)
 Thread(target=run).start()
 
 # ====== KHỞI ĐỘNG BOT ======
-async def main():
+async def run_bot():
     print("🔑 Đang chạy bot Telegram...")
     app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
     await app_bot.initialize()
@@ -156,9 +156,14 @@ async def main():
     app_bot.add_handler(CommandHandler("files", files))
     app_bot.add_handler(CommandHandler("delete", delete))
     app_bot.add_handler(CommandHandler("stats", stats))
-    app_bot.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE, handle_file))
+    app_bot.add_handler(MessageHandler(
+        filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE,
+        handle_file
+    ))
 
-    await app_bot.run_polling()
+    await app_bot.start()
+    await app_bot.updater.start_polling()
+    await app_bot.updater.idle()
 
 if not BOT_TOKEN:
     print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
@@ -167,11 +172,11 @@ else:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             print("🔄 Loop đang chạy → tạo task chạy bot.")
-            loop.create_task(main())
+            loop.create_task(run_bot())
         else:
-            loop.run_until_complete(main())
+            loop.run_until_complete(run_bot())
     except RuntimeError:
         print("⚠️ Không thể lấy event loop, tạo mới.")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(main())
+        loop.create_task(run_bot())
