@@ -33,14 +33,14 @@ async def files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
 
     if not files:
-        await update.message.reply_text("📂 Bạn chưa lưu file nào.")
+         update.message.reply_text("📂 Bạn chưa lưu file nào.")
         return
 
     if args:
         date_filter = args[0]
         filtered = [f for f in files if f['timestamp'].startswith(date_filter)]
         if not filtered:
-            await update.message.reply_text(f"❌ Không có file nào vào ngày {date_filter}.")
+             update.message.reply_text(f"❌ Không có file nào vào ngày {date_filter}.")
             return
         reply = "\n".join([
             f"{f['name']} ({f['size_kb']} KB, {f['timestamp']}) [ID: {f['id']}]"
@@ -161,9 +161,11 @@ async def run_bot():
         handle_file
     ))
 
-    await app_bot.start()
-    await app_bot.updater.start_polling()
-    await app_bot.updater.idle()
+    await app_bot.run_polling()
+
+
+    await app_bot.run_polling()
+
 
 if not BOT_TOKEN:
     print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
