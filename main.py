@@ -1,3 +1,4 @@
+import os
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
@@ -7,8 +8,9 @@ from threading import Thread
 from datetime import datetime
 import pytz
 
-BOT_TOKEN = "7666869071:AAFi5x3OJr50BGdRbapYKd7pSpYfqfsqFx4"
+BOT_TOKEN = os.environ.get("TELEGRAM_TOKEN")  # ✅ Bảo mật hơn
 user_files = {}
+
 
 # ====== LỆNH ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
