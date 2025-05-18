@@ -33,14 +33,14 @@ async def files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
 
     if not files:
-         update.message.reply_text("📂 Bạn chưa lưu file nào.")
-         return
+        await update.message.reply_text("📂 Bạn chưa lưu file nào.")
+        return
 
     if args:
         date_filter = args[0]
         filtered = [f for f in files if f['timestamp'].startswith(date_filter)]
         if not filtered:
-             update.message.reply_text(f"❌ Không có file nào vào ngày {date_filter}.")
+            await update.message.reply_text(f"❌ Không có file nào vào ngày {date_filter}.")
             return
         reply = "\n".join([
             f"{f['name']} ({f['size_kb']} KB, {f['timestamp']}) [ID: {f['id']}]"
@@ -141,7 +141,6 @@ Thread(target=run).start()
 async def run_bot():
     print("🔑 Đang chạy bot Telegram...")
     app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
-    await app_bot.initialize()
 
     await app_bot.bot.set_my_commands([
         BotCommand("start", "Khởi động bot"),
@@ -163,22 +162,7 @@ async def run_bot():
 
     await app_bot.run_polling()
 
-
-    await app_bot.run_polling()
-
-
 if not BOT_TOKEN:
     print("❌ Lỗi: Chưa thiết lập biến môi trường BOT_TOKEN!")
 else:
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            print("🔄 Loop đang chạy → tạo task chạy bot.")
-            loop.create_task(run_bot())
-        else:
-            loop.run_until_complete(run_bot())
-    except RuntimeError:
-        print("⚠️ Không thể lấy event loop, tạo mới.")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.create_task(run_bot())
+    asyncio.run(run_bot())
