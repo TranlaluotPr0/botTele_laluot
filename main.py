@@ -170,6 +170,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await file.download_to_drive("log.csv")
         received_files.clear()
         load_from_csv()
+        application.bot_data["received_files"] = received_files
         waiting_import.remove(user_id)
         await update.message.reply_text(f"✅ Đã nhập {len(received_files)} file từ log.csv.")
         return
@@ -220,6 +221,8 @@ application.add_handler(CommandHandler("export", export_csv))
 application.add_handler(CommandHandler("import", import_csv))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+application.add_handler(CommandHandler("chon_ngay", chon_ngay))
+application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 
 # === Đăng ký menu / lệnh Telegram ===
 async def set_bot_commands(app: Application):
