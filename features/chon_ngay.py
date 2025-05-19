@@ -46,19 +46,32 @@ async def handle_ngay_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 # === Khi người dùng nhập ngày bằng tay ===
 async def handle_ngay_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.user_data.get("chon_ngay_mode"):
-        return  # Bỏ qua nếu không ở trạng thái chờ nhập ngày
+        return  # Không trong chế độ chọn ngày, bỏ qua
 
-    date_input = update.message.text.strip()
-    # Chuẩn hoá các kiểu: 19/5, 19-05, 19/05/2025, ...
+    user_input = update.message.text.strip().lower()
+
+    # Thoát nếu nhập /exit
+    if user_input == "/exit":
+        context.user_data["chon_ngay_mode"] = False
+        await update.message.reply_text("❎ Đã thoát khỏi chế độ chọn ngày.")
+        return
+
+    # Thử parse ngày theo nhiều định dạng
     for fmt in ["%d/%m", "%d-%m", "%d/%m/%Y", "%d-%m-%Y"]:
         try:
-            parsed = datetime.strptime(date_input, fmt)
+            parsed = datetime.strptime(user_input, fmt)
+            # Nếu không có năm, gán mặc định năm hiện tại
+            if parsed.year == 1900:
+                parsed = parsed.replace(year=datetime.now().year)
             date_str = parsed.strftime("%d-%m-%Y")
             await process_date(update, context, date_str)
             return
         except:
             continue
-    await update.message.reply_text("❌ Ngày không hợp lệ. Vui lòng nhập lại (ví dụ: 19/5 hoặc 19-05-2025).")
+
+    # Nếu không đúng bất kỳ định dạng nào
+    await update.message.reply_text("❌ Ngày không hợp lệ. Vui lòng nhập lại (ví dụ: 19/5 hoặc 18-05).\nNhập /exit để thoát.")
+
 
 # === Xử lý ngày đã chuẩn hóa (dùng chung cho nút & text) ===
 async def process_date(update: Update, context: ContextTypes.DEFAULT_TYPE, date_str: str, from_callback=False):
