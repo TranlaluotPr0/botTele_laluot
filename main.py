@@ -2,7 +2,7 @@ import os
 import csv
 import asyncio
 import threading
-from features.tags import add_tag, filter_by_tag
+from features.tags import add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag
 from dotenv import load_dotenv
 from flask import Flask, request
 from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
@@ -248,6 +248,9 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ngay_text)) 
 application.add_handler(CommandHandler("addtag", add_tag))
 application.add_handler(CommandHandler("tag", filter_by_tag))
+application.add_handler(CommandHandler("removetag", remove_tag))
+application.add_handler(CommandHandler("cleartags", clear_tags))
+application.add_handler(CommandHandler("renametag", rename_tag))
 
 
 # === Đăng ký menu / lệnh Telegram ===
