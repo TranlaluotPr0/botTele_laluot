@@ -32,6 +32,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message)
 
 # Lưu file nhận được
+# Lưu file nhận được, kiểm tra trùng tên hoặc size
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     document = update.message.document
     if document:
@@ -40,6 +41,16 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         size = round(document.file_size / 1024 / 1024, 2)  # MB
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # Kiểm tra trùng tên hoặc trùng size
+        for fid, info in saved_files.items():
+            if info["name"] == name:
+                await update.message.reply_text(f"⚠️ Đã có file trùng tên: `{name}`", parse_mode="Markdown")
+                return
+            if abs(info["size"] - size) < 0.01:  # chênh lệch nhỏ cho số float
+                await update.message.reply_text(f"⚠️ Đã có file khác trùng dung lượng: {size} MB", parse_mode="Markdown")
+                return
+
+        # Nếu không trùng thì lưu
         saved_files[file_id] = {
             "name": name,
             "size": size,
@@ -47,6 +58,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
 
         await update.message.reply_text(f"✅ Đã lưu file: `{name}` ({size} MB)", parse_mode="Markdown")
+
 
 # Xem danh sách file
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
