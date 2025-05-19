@@ -211,7 +211,15 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sent_time = update.message.date.astimezone(vn_tz)
     time_str = sent_time.strftime("%H:%M:%S %d-%m-%Y")
     size_text = f"{file_size/1024:.2f} KB" if file_size < 1024*1024 else f"{file_size/1024/1024:.2f} MB"
-    data = {"id": msg_id, "name": "Ảnh (không có tên)", "size": size_text, "time": time_str}
+
+    data = {
+        "id": msg_id,
+        "name": "Ảnh (không có tên)",
+        "size": size_text,
+        "time": time_str,
+        "file_id": photo.file_id  # ✅ thêm dòng này là đúng
+    }
+
     received_files.append(data)
     append_to_csv(data)
 
@@ -221,6 +229,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⏰ <b>Thời gian:</b> {time_str}\n"
         f"🆔 <b>ID:</b> <code>{msg_id}</code>"
     )
+
 
 # === Handlers ===
 application.add_handler(CommandHandler("start", start))
