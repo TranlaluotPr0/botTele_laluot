@@ -124,7 +124,7 @@ if __name__ == "__main__":
         print(f"🚀 Webhook set tại: {WEBHOOK_URL}")
         await telegram_app.initialize()
         await telegram_app.start()
-        await telegram_app.updater.start_polling()
-        app_flask.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+        # KHÔNG dùng polling nữa khi dùng webhook
+        # Flask sẽ do Render tự chạy nên không cần app_flask.run()
 
     asyncio.run(main())
