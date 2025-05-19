@@ -1,27 +1,27 @@
+import logging
 import os
-from telegram import Update, BotCommand
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-)
-from flask import Flask
-from threading import Thread
 from datetime import datetime
-import pytz
-import asyncio
+from telegram import Update, InputFile
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes,
+    filters
+)
 
-# ⚠️ GẮN TRỰC TIẾP TOKEN (chỉ nên dùng tạm)
-BOT_TOKEN = "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4"
-user_files = {}
+# Bật log để debug
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
-# ====== LỆNH ======
+# Bot Token
+TOKEN = "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4"
+
+# Nơi lưu file metadata trong RAM
+saved_files = {}
+
+# Gửi hướng dẫn sử dụng
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("📥 Nhận lệnh /start từ:", update.effective_user.username)
-    if update.message:
-        await update.message.reply_text("👋 Chào bạn! Gửi file để lưu trữ.\nDùng /help để xem hướng dẫn.")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("📥 Nhận lệnh /help từ:", update.effective_user.username)
-    await update.message.reply_text(
+    message = (
         "📖 Hướng dẫn:\n"
         "/start - Khởi động bot\n"
         "/files - Danh sách tất cả file\n"
@@ -29,156 +29,78 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/delete <file_id> - Xoá file khỏi danh sách\n"
         "/stats - Thống kê số file đã lưu"
     )
+    await update.message.reply_text(message)
 
-async def files(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    files = user_files.get(user_id, [])
+# Lưu file nhận được
+async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    document = update.message.document
+    if document:
+        file_id = document.file_id
+        name = document.file_name
+        size = round(document.file_size / 1024 / 1024, 2)  # MB
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        saved_files[file_id] = {
+            "name": name,
+            "size": size,
+            "date": now
+        }
+
+        await update.message.reply_text(f"✅ Đã lưu file: `{name}` ({size} MB)", parse_mode="Markdown")
+
+# Xem danh sách file
+async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
-
-    if not files:
-        await update.message.reply_text("📂 Bạn chưa lưu file nào.")
-        return
+    filtered = saved_files
 
     if args:
-        date_filter = args[0]
-        filtered = [f for f in files if f['timestamp'].startswith(date_filter)]
-        if not filtered:
-            await update.message.reply_text(f"❌ Không có file nào vào ngày {date_filter}.")
+        try:
+            date_filter = args[0]
+            datetime.strptime(date_filter, "%Y-%m-%d")
+            filtered = {fid: info for fid, info in saved_files.items() if info["date"].startswith(date_filter)}
+        except ValueError:
+            await update.message.reply_text("⚠️ Định dạng ngày không hợp lệ. Dùng: `/files YYYY-MM-DD`", parse_mode="Markdown")
             return
-        reply = "\n".join([
-            f"{f['name']} ({f['size_kb']} KB, {f['timestamp']}) [ID: {f['id']}]"
-            for f in filtered
-        ])
-        await update.message.reply_text(f"📁 File ngày {date_filter}:\n{reply}")
-    else:
-        reply = "\n".join([
-            f"{f['name']} ({f['size_kb']} KB, {f['timestamp']}) [ID: {f['id']}]"
-            for f in files
-        ])
-        await update.message.reply_text("📄 Danh sách file:\n" + reply)
 
-async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    files = user_files.get(user_id, [])
-    file_id = update.message.text.replace('/delete', '').strip()
-
-    if not file_id:
-        await update.message.reply_text("❗ Dùng đúng cú pháp: /delete <file_id>")
+    if not filtered:
+        await update.message.reply_text("📂 Không có file nào.")
         return
 
-    for f in files:
-        if f['id'] == file_id:
-            files.remove(f)
-            await update.message.reply_text(f"🗑️ Đã xoá file: {f['name']}\n⚠️ File vẫn tồn tại trên Telegram nếu bạn còn file_id.")
-            return
+    message = "📁 Danh sách file đã lưu:\n"
+    for fid, info in filtered.items():
+        message += f"🗂️ `{info['name']}` - {info['size']} MB - `{fid}`\n"
+    await update.message.reply_text(message, parse_mode="Markdown")
 
-    await update.message.reply_text("❌ Không tìm thấy file có ID đó.")
+# Xoá file
+async def delete_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
+    if not args:
+        await update.message.reply_text("⚠️ Vui lòng nhập file_id để xoá: `/delete <file_id>`", parse_mode="Markdown")
+        return
 
+    file_id = args[0]
+    if file_id in saved_files:
+        name = saved_files[file_id]["name"]
+        del saved_files[file_id]
+        await update.message.reply_text(f"🗑️ Đã xoá file `{name}`.", parse_mode="Markdown")
+    else:
+        await update.message.reply_text("❌ Không tìm thấy file_id.")
+
+# Thống kê
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    count = len(user_files.get(user_id, []))
-    await update.message.reply_text(f"📊 Bạn đã lưu {count} file.")
+    count = len(saved_files)
+    total_size = sum(info["size"] for info in saved_files.values())
+    await update.message.reply_text(f"📊 Tổng cộng {count} file, dung lượng khoảng {total_size:.2f} MB.")
 
-# ====== XỬ LÝ FILE ======
-async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
+# Chạy bot
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    msg = update.message
-    user_id = update.effective_user.id
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("files", list_files))
+    app.add_handler(CommandHandler("delete", delete_file))
+    app.add_handler(CommandHandler("stats", stats))
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-    file = msg.document or msg.audio or msg.video or msg.voice
-    file_type = "file"
-
-    if not file and msg.photo:
-        file = msg.photo[-1]
-        file_type = "photo"
-
-    if not file:
-        return
-
-    if file_type == "photo":
-        file_name = f"photo_{file.file_unique_id}.jpg"
-        size_bytes = None
-        is_original = False
-    else:
-        file_name = getattr(file, 'file_name', 'unknown')
-        size_bytes = getattr(file, 'file_size', None)
-        is_original = True
-
-    file_id = file.file_id
-    tz = pytz.timezone("Asia/Ho_Chi_Minh")
-    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-    if size_bytes:
-        size_kb = round(size_bytes / 1024, 2)
-        size_str = f"{round(size_kb / 1024, 2)} MB" if size_kb > 1024 else f"{size_kb} KB"
-    else:
-        size_kb = 0
-        size_str = "Không xác định"
-
-    user_files.setdefault(user_id, []).append({
-        "id": file_id,
-        "name": file_name,
-        "timestamp": timestamp,
-        "size_kb": size_kb
-    })
-
-    await msg.reply_text(
-        f"✅ Đã lưu: {file_name}\n"
-        f"🕒 {timestamp}\n"
-        f"📦 Dung lượng: {size_str}\n"
-        f"🆔 File ID: {file_id}" +
-        ("\n⚠️ Ảnh gửi dạng *photo* hoặc forward có thể bị nén, không giữ tên/dung lượng gốc." if not is_original else "")
-    )
-
-# ====== DEBUG TOÀN BỘ UPDATE ======
-async def log_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("📩 Nhận update từ Telegram:")
-    print(update)
-
-# ====== KEEP ALIVE ======
-app = Flask(__name__)
-@app.route('/')
-def home(): return "Bot is running."
-
-def run_flask(): app.run(host='0.0.0.0', port=8080)
-Thread(target=run_flask).start()
-
-# ====== KHỞI ĐỘNG BOT ======
-async def run_bot():
-    print("🔑 Đang chạy bot Telegram...")
-    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    await app_bot.bot.set_my_commands([
-        BotCommand("start", "Khởi động bot"),
-        BotCommand("help", "Hướng dẫn sử dụng"),
-        BotCommand("files", "Danh sách file đã lưu"),
-        BotCommand("delete", "Xoá file theo ID"),
-        BotCommand("stats", "Thống kê số file đã lưu"),
-    ])
-
-    app_bot.add_handler(CommandHandler("start", start))
-    app_bot.add_handler(CommandHandler("help", help_command))
-    app_bot.add_handler(CommandHandler("files", files))
-    app_bot.add_handler(CommandHandler("delete", delete))
-    app_bot.add_handler(CommandHandler("stats", stats))
-
-    app_bot.add_handler(MessageHandler(
-        filters.Document.ALL | filters.PHOTO | filters.AUDIO | filters.VIDEO | filters.VOICE | filters.TEXT,
-        handle_file
-    ))
-
-    app_bot.add_handler(MessageHandler(filters.ALL, log_all))  # log mọi update để debug
-
-    await app_bot.run_polling()
-
-# === CHẠY KHÔNG DÙNG asyncio.run() ===
-if __name__ == '__main__':
-    if not BOT_TOKEN:
-        print("❌ Lỗi: Chưa thiết lập BOT_TOKEN!")
-    else:
-        print("⚙️ Bắt đầu khởi chạy bot...")
-        loop = asyncio.get_event_loop()
-        loop.create_task(run_bot())
-        loop.run_forever()
+    print("🤖 Bot đang chạy...")
+    app.run_polling()
