@@ -17,14 +17,13 @@ def save_tags(tags_data):
     with open(TAGS_FILE, "w", encoding="utf-8") as f:
         json.dump(tags_data, f, ensure_ascii=False, indent=2)
 
-# === /addtag <id> <tag>: gắn tag cho file
+# === /addtag <id> <tag>
 async def add_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 2:
-        await update.message.reply_text("❗ Dùng: /addtag <id> <ten_tag>")
+        await update.message.reply_text("❗ Dùng: /addtag <id> <tag>")
         return
 
     file_id_str, tag = context.args[0], context.args[1].strip().lower()
-
     if not file_id_str.isdigit():
         await update.message.reply_text("❗ ID không hợp lệ.")
         return
@@ -41,10 +40,73 @@ async def add_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"✅ Đã gắn tag '{tag}' cho file ID {file_id_str}.")
 
-# === /tag <tag>: xem các file có tag tương ứng
+# === /removetag <id> <tag>
+async def remove_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) < 2:
+        await update.message.reply_text("❗ Dùng: /removetag <id> <tag>")
+        return
+
+    file_id_str, tag = context.args[0], context.args[1].strip().lower()
+    tags_data = load_tags()
+
+    if file_id_str not in tags_data or tag not in tags_data[file_id_str]:
+        await update.message.reply_text("⚠️ Tag không tồn tại với file này.")
+        return
+
+    tags_data[file_id_str].remove(tag)
+    if not tags_data[file_id_str]:
+        del tags_data[file_id_str]  # xóa hẳn nếu không còn tag
+    save_tags(tags_data)
+
+    await update.message.reply_text(f"✅ Đã xóa tag '{tag}' khỏi file ID {file_id_str}.")
+
+# === /cleartags <id>
+async def clear_tags(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args or not context.args[0].isdigit():
+        await update.message.reply_text("❗ Dùng: /cleartags <id>")
+        return
+
+    file_id_str = context.args[0]
+    tags_data = load_tags()
+
+    if file_id_str not in tags_data:
+        await update.message.reply_text("⚠️ File này không có tag.")
+        return
+
+    del tags_data[file_id_str]
+    save_tags(tags_data)
+
+    await update.message.reply_text(f"🗑 Đã xóa toàn bộ tag của file ID {file_id_str}.")
+
+# === /renametag <old_tag> <new_tag>
+async def rename_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) < 2:
+        await update.message.reply_text("❗ Dùng: /renametag <tag_cũ> <tag_mới>")
+        return
+
+    old_tag = context.args[0].strip().lower()
+    new_tag = context.args[1].strip().lower()
+    tags_data = load_tags()
+    count = 0
+
+    for file_id, tags in tags_data.items():
+        if old_tag in tags:
+            tags.remove(old_tag)
+            if new_tag not in tags:
+                tags.append(new_tag)
+            tags_data[file_id] = tags
+            count += 1
+
+    if count == 0:
+        await update.message.reply_text("❌ Không tìm thấy tag cần đổi.")
+    else:
+        save_tags(tags_data)
+        await update.message.reply_text(f"✅ Đã đổi '{old_tag}' → '{new_tag}' cho {count} file.")
+
+# === /tag <tag>: liệt kê các file có tag
 async def filter_by_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("❗ Dùng: /tag <ten_tag>")
+        await update.message.reply_text("❗ Dùng: /tag <tag>")
         return
 
     search_tag = context.args[0].strip().lower()
