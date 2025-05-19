@@ -14,7 +14,7 @@ from datetime import datetime
 # === Load biến môi trường ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")  # Dùng domain Render tự cấp
+WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 
@@ -23,17 +23,20 @@ app = Flask(__name__)
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 received_files = []
 
-# === Telegram bot app ===
+# === Telegram app ===
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# === Các command ===
+# === Command handlers ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"📥 /start từ {update.effective_user.username}")
     await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
 
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"📥 /ping từ {update.effective_user.username}")
     await update.message.reply_text("🏓 Bot đang hoạt động bình thường.")
 
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"📥 /menu từ {update.effective_user.username}")
     await update.message.reply_text(
         "📋 Danh sách lệnh có sẵn:\n"
         "/start - Bắt đầu\n"
@@ -43,6 +46,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"📥 /list từ {update.effective_user.username}")
     if not received_files:
         await update.message.reply_text("📭 Chưa có file nào được gửi.")
         return
@@ -56,7 +60,6 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_html(text)
 
-# === Handle file gửi đến bot ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     if not doc:
@@ -67,6 +70,8 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sent_time = update.message.date.astimezone(vn_tz)
     readable_time = sent_time.strftime("%H:%M:%S %d-%m-%Y")
     size_text = f"{file_size / 1024:.2f} KB" if file_size < 1024 * 1024 else f"{file_size / (1024 * 1024):.2f} MB"
+
+    print(f"📥 Nhận file: {file_name} từ {update.effective_user.username}")
 
     received_files.append({
         "id": msg_id,
@@ -82,14 +87,14 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID tin nhắn:</b> <code>{msg_id}</code>"
     )
 
-# === Đăng ký lệnh và handler ===
+# === Gắn các handler vào bot ===
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-# === Menu lệnh Telegram bot ===
+# === Gắn menu lệnh Telegram ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu sử dụng bot"),
@@ -99,30 +104,33 @@ async def set_bot_commands(app: Application):
     ])
 application.post_init = set_bot_commands
 
-# === Webhook route ===
+# === Flask route cho Telegram Webhook ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
+    update_data = request.get_json(force=True)
+    print("📩 Nhận dữ liệu webhook:", update_data)  # ✅ Kiểm tra webhook gọi đúng
+    update = Update.de_json(update_data, application.bot)
     application.update_queue.put_nowait(update)
     return {"ok": True}
 
+# === Trang chủ ===
 @app.route("/", methods=["GET"])
 def home():
     return "<h3>🤖 Bot Telegram đã triển khai thành công trên Render!</h3>"
 
-# === Chạy Flask và bot song song ===
+# === Chạy bot và flask song song ===
 if __name__ == "__main__":
     def run_flask():
         port = int(os.environ.get("PORT", 10000))
         app.run(host="0.0.0.0", port=port)
 
     async def main():
+        print(f"🌐 WEBHOOK_URL: {WEBHOOK_URL}")
         await application.bot.delete_webhook()
         await application.bot.set_webhook(WEBHOOK_URL)
-        print(f"🚀 Webhook set tại: {WEBHOOK_URL}")
+        print(f"🚀 Đã set webhook tại: {WEBHOOK_URL}")
         await application.initialize()
         await application.start()
 
-    # Flask chạy trên thread riêng
     threading.Thread(target=run_flask).start()
     asyncio.run(main())
