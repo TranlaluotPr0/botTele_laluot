@@ -1,6 +1,6 @@
 python-telegram-bot[webhooks]==20.7
 python-dotenv
 aiohttp==3.9.3
-flask
+flask[async]
 asgiref
 pytz
