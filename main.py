@@ -12,13 +12,15 @@ from telegram.ext import (
 import pytz
 from datetime import datetime
 
-# ✅ Tạo credentials.json đúng định dạng từ chuỗi JSON
-raw_credential = '''
-{
+# === Google Sheets: dùng credentials trực tiếp ===
+import gspread
+from google.oauth2.service_account import Credentials
+
+raw_credential = '''{
   "type": "service_account",
   "project_id": "telegrambot-460310",
   "private_key_id": "da8c8924eead97d61c9bc4e2656fc624a7454a3b",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCmkQFgcSZhyJL9\\nCb/kwGH8MQVTp8mYty6wBJ3u2woQbE4buTKl1wrLXt+oTEdaEDx/le27RjN0hZAR\\n...\\n-----END PRIVATE KEY-----\\n",
+  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKY...\\n-----END PRIVATE KEY-----\\n",
   "client_email": "telegram-bot-access@telegrambot-460310.iam.gserviceaccount.com",
   "client_id": "105115100495018451508",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -26,22 +28,13 @@ raw_credential = '''
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/telegram-bot-access%40telegrambot-460310.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
-}
-'''
-CREDENTIALS_PATH = "credentials.json"
-if not os.path.exists(CREDENTIALS_PATH):
-    with open(CREDENTIALS_PATH, "w", encoding="utf-8") as f:
-        f.write(json.dumps(json.loads(raw_credential), indent=2))
+}'''
 
-# ✅ Kết nối Google Sheets
-import gspread
-from google.oauth2.service_account import Credentials
-SHEET_ID = "16Jq_50T8hKGkgLkvbDlydnsoN-eHXSamCRq06sLMy8"
-SHEET_NAME = "Trang tính1"
+credential_info = json.loads(raw_credential.replace("\\n", "\n"))
 scope = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=scope)
+creds = Credentials.from_service_account_info(credential_info, scopes=scope)
 client = gspread.authorize(creds)
-sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
+sheet = client.open_by_key("16Jq_50T8hKGkgLkvbDlydnsoN-eHXSamCRq06sLMy8").worksheet("Trang tính1")
 
 def append_to_sheet(data):
     sheet.append_row([data["id"], data["name"], data["size"], data["time"]])
@@ -51,7 +44,7 @@ event_loop = None
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 received_files = []
 
-# === Load env & cấu hình webhook ===
+# === Webhook và bot ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")
@@ -61,7 +54,7 @@ WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# === Các lệnh bot ===
+# === Các command ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
 
@@ -147,7 +140,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⏰ <b>Thời gian:</b> {time_str}\n🆔 <b>ID:</b> <code>{msg_id}</code>"
     )
 
-# === Gắn handler & command ===
+# === Gắn handler ===
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
@@ -156,32 +149,28 @@ application.add_handler(CommandHandler("list_ngay", list_files_by_date))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# === Menu lệnh Telegram ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu"),
         BotCommand("ping", "Kiểm tra bot"),
         BotCommand("menu", "Hiển thị menu"),
-        BotCommand("list", "Xem danh sách file"),
-        BotCommand("list_ngay", "Lọc file theo ngày")
+        BotCommand("list", "Xem file đã gửi"),
+        BotCommand("list_ngay", "Lọc theo ngày")
     ])
 application.post_init = set_bot_commands
 
-# === Webhook route ===
-@app.route(WEBHOOK_PATH, methods=["POST"])
+@app.route("/webhook", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     asyncio.run_coroutine_threadsafe(application.process_update(update), event_loop)
     return {"ok": True}
 
 @app.route("/")
-def home(): return "🤖 Bot Telegram đang chạy trên Render!"
+def home(): return "🤖 Bot Telegram đang chạy!"
 
-# === Chạy Flask + Bot song song ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-
     async def main():
         global event_loop
         event_loop = asyncio.get_event_loop()
@@ -189,6 +178,5 @@ if __name__ == "__main__":
         await application.bot.set_webhook(WEBHOOK_URL)
         await application.initialize()
         await application.start()
-
     threading.Thread(target=run_flask).start()
     asyncio.run(main())
