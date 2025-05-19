@@ -74,22 +74,25 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         saved_files[file_id] = {"name": name, "size": size, "date": now}
         await update.message.reply_text(f"✅ Đã lưu file `{name}` ({size} MB)", parse_mode="Markdown")
 
-# Khởi tạo app ngoài event loop
-app = ApplicationBuilder().token(BOT_TOKEN).build()
+# ---------- CHẠY BOT DÙNG EVENT LOOP TỰ TẠO ----------
+async def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("files", list_files))
-app.add_handler(CommandHandler("delete", delete_file))
-app.add_handler(CommandHandler("stats", stats))
-app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("files", list_files))
+    app.add_handler(CommandHandler("delete", delete_file))
+    app.add_handler(CommandHandler("stats", stats))
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-# Chạy bot
-if __name__ == "__main__":
-    # Set webhook bằng asyncio
-    asyncio.run(app.bot.set_webhook(WEBHOOK_URL))
+    await app.bot.set_webhook(WEBHOOK_URL)
     print(f"🤖 Webhook đã set tại {WEBHOOK_URL}")
 
-    # KHÔNG await hàm này — vì nó là hàm blocking
+    return app
+
+if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    app = loop.run_until_complete(main())
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
