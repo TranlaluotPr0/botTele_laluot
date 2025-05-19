@@ -57,6 +57,7 @@ app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 load_from_csv()
+application.bot_data["received_files"] = received_files  # ✅ QUAN TRỌNG
 
 # === Lệnh bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
