@@ -1,19 +1,20 @@
 import os
+import asyncio
 from datetime import datetime
 from telegram import Update
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    ContextTypes, filters
+    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 )
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4")
 WEBHOOK_HOST = "https://trannguyengiadat-tele.onrender.com"
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
-PORT = int(os.environ.get('PORT', 8443))
+PORT = int(os.environ.get("PORT", 8443))
 
 saved_files = {}
 
+# Commands
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📖 Hướng dẫn:\n"
@@ -30,11 +31,9 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if args:
         date_filter = args[0]
         filtered = {fid: info for fid, info in saved_files.items() if info["date"].startswith(date_filter)}
-
     if not filtered:
         await update.message.reply_text("📂 Không có file nào.")
         return
-
     text = "\n".join([f"🗂️ `{info['name']}` - {info['size']} MB - `{fid}`" for fid, info in filtered.items()])
     await update.message.reply_text(f"📁 Danh sách file:\n{text}", parse_mode="Markdown")
 
@@ -45,7 +44,7 @@ async def delete_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     file_id = args[0]
     if file_id in saved_files:
-        name = saved_files[file_id]['name']
+        name = saved_files[file_id]["name"]
         del saved_files[file_id]
         await update.message.reply_text(f"🗑️ Đã xoá `{name}`.", parse_mode="Markdown")
     else:
@@ -75,8 +74,8 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         saved_files[file_id] = {"name": name, "size": size, "date": now}
         await update.message.reply_text(f"✅ Đã lưu file `{name}` ({size} MB)", parse_mode="Markdown")
 
-# KHÔNG async nữa
-if __name__ == "__main__":
+# ✅ CHẠY async main TỪ ĐÂY
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -85,14 +84,14 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("stats", stats))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-    # Đăng ký webhook với Telegram
-    import asyncio
-    asyncio.run(app.bot.set_webhook(WEBHOOK_URL))
+    await app.bot.set_webhook(WEBHOOK_URL)
     print(f"🤖 Webhook đã set tại {WEBHOOK_URL}")
 
-    # Khởi chạy bot với webhook
-    app.run_webhook(
+    await app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL
     )
+
+if __name__ == "__main__":
+    asyncio.run(main())
