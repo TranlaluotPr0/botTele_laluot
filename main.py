@@ -63,6 +63,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_html(text)
 
+# === Xử lý file document ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     if not doc:
@@ -90,12 +91,41 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID tin nhắn:</b> <code>{msg_id}</code>"
     )
 
+# === Xử lý ảnh (photo) ===
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.photo:
+        return
+
+    photo = update.message.photo[-1]  # Ảnh độ phân giải cao nhất
+    msg_id = update.message.message_id
+    sent_time = update.message.date.astimezone(vn_tz)
+    readable_time = sent_time.strftime("%H:%M:%S %d-%m-%Y")
+    file_size = photo.file_size or 0
+    size_text = f"{file_size / 1024:.2f} KB" if file_size < 1024 * 1024 else f"{file_size / (1024 * 1024):.2f} MB"
+
+    print(f"📸 Nhận ảnh từ {update.effective_user.username}")
+
+    received_files.append({
+        "id": msg_id,
+        "name": "Ảnh (không có tên)",
+        "size": size_text,
+        "time": readable_time
+    })
+
+    await update.message.reply_html(
+        f"🖼 <b>Ảnh nhận được</b>\n"
+        f"📦 <b>Dung lượng:</b> {size_text}\n"
+        f"⏰ <b>Thời gian gửi:</b> {readable_time}\n"
+        f"🆔 <b>ID tin nhắn:</b> <code>{msg_id}</code>"
+    )
+
 # === Gắn handler ===
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
+application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
 # === Đăng ký menu lệnh ===
 async def set_bot_commands(app: Application):
