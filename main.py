@@ -95,7 +95,10 @@ def home():
 def webhook():
     try:
         update = Update.de_json(request.get_json(force=True), telegram_app.bot)
-        async_to_sync(telegram_app.update_queue.put)(update)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(telegram_app.process_update(update))
+        loop.close()
         return {"ok": True}
     except Exception as e:
         print("❌ Lỗi webhook:", e)
