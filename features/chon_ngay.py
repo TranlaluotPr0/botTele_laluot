@@ -1,9 +1,7 @@
-# features/chon_ngay.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackQueryHandler, ContextTypes
-from datetime import datetime
+from telegram.ext import ContextTypes
 
-# === Hàm hiển thị danh sách ngày dưới dạng nút bấm ===
+# === Giao diện chọn ngày từ danh sách file đã lưu ===
 async def chon_ngay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     received_files = context.bot_data.get("received_files", [])
     dates = sorted({f['time'].split()[-1] for f in received_files})
@@ -24,7 +22,7 @@ async def chon_ngay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("📅 Chọn ngày để tải lại file:", reply_markup=markup)
 
-# === Hàm xử lý khi bấm vào ngày ===
+# === Xử lý khi người dùng bấm vào nút chọn ngày ===
 async def handle_ngay_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -44,10 +42,25 @@ async def handle_ngay_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
     for f in matched:
         try:
-            await context.bot.copy_message(
+            # Nếu có file_id thì gửi lại bằng send_document
+            if "file_id" in f:
+                await context.bot.send_document(
+                    chat_id=update.effective_user.id,
+                    document=f["file_id"],
+                    caption=f"📄 {f['name']}\n📦 {f['size']}\n⏰ {f['time']}"
+                )
+            else:
+                # Nếu không có file_id, gửi thông báo hỗ trợ
+                await context.bot.send_message(
+                    chat_id=update.effective_user.id,
+                    text=(
+                        f"⚠️ File ID: {f['id']} không thể gửi lại tự động.\n"
+                        f"📄 Tên: {f['name']}\n📦 Dung lượng: {f['size']}\n"
+                        f"⏰ Thời gian: {f['time']}"
+                    )
+                )
+        except Exception as e:
+            await context.bot.send_message(
                 chat_id=update.effective_user.id,
-                from_chat_id=update.effective_chat.id,
-                message_id=f["id"]
+                text=f"🚫 Lỗi gửi file ID {f['id']}: {str(e)}"
             )
-        except:
-            await context.bot.send_message(chat_id=update.effective_user.id, text=f"⚠️ Không thể gửi file ID: {f['id']}")
