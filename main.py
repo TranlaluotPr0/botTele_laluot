@@ -12,21 +12,28 @@ from telegram.ext import (
 import pytz
 from datetime import datetime
 
-# === Tạo credentials.json tự động ===
-CREDENTIAL_JSON = {
+# ✅ Tạo credentials.json đúng định dạng từ chuỗi JSON
+raw_credential = '''
+{
   "type": "service_account",
   "project_id": "telegrambot-460310",
   "private_key_id": "da8c8924eead97d61c9bc4e2656fc624a7454a3b",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCmkQFgcSZhyJL9...\\n-----END PRIVATE KEY-----\\n",
+  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCmkQFgcSZhyJL9\\nCb/kwGH8MQVTp8mYty6wBJ3u2woQbE4buTKl1wrLXt+oTEdaEDx/le27RjN0hZAR\\n...\\n-----END PRIVATE KEY-----\\n",
   "client_email": "telegram-bot-access@telegrambot-460310.iam.gserviceaccount.com",
-  "token_uri": "https://oauth2.googleapis.com/token"
+  "client_id": "105115100495018451508",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/telegram-bot-access%40telegrambot-460310.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
 }
+'''
 CREDENTIALS_PATH = "credentials.json"
 if not os.path.exists(CREDENTIALS_PATH):
     with open(CREDENTIALS_PATH, "w", encoding="utf-8") as f:
-        json.dump(CREDENTIAL_JSON, f)
+        f.write(json.dumps(json.loads(raw_credential), indent=2))
 
-# === Google Sheets ===
+# ✅ Kết nối Google Sheets
 import gspread
 from google.oauth2.service_account import Credentials
 SHEET_ID = "16Jq_50T8hKGkgLkvbDlydnsoN-eHXSamCRq06sLMy8"
