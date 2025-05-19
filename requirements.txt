@@ -4,3 +4,5 @@ aiohttp==3.9.3
 flask[async]
 asgiref
 pytz
+gspread
+google-auth
