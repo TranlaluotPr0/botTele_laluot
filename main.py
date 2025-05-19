@@ -1,11 +1,11 @@
 import os
 import csv
-import json
 import asyncio
 import threading
 from dotenv import load_dotenv
 from flask import Flask, request
 from telegram import Update, BotCommand
+from telegram.constants import ChatAction
 from telegram.ext import (
     ApplicationBuilder, Application, CommandHandler,
     MessageHandler, ContextTypes, filters
@@ -49,8 +49,16 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/ping - Kiểm tra bot\n"
         "/menu - Danh sách lệnh\n"
         "/list - Xem file đã gửi\n"
-        "/list_ngay <dd-mm-yyyy> - Lọc file theo ngày"
+        "/list_ngay <dd-mm-yyyy> - Lọc file theo ngày\n"
+        "/export - Tải log.csv"
     )
+
+async def export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.chat.send_action(ChatAction.UPLOAD_DOCUMENT)
+    if os.path.exists("log.csv"):
+        await update.message.reply_document(open("log.csv", "rb"))
+    else:
+        await update.message.reply_text("⚠️ Chưa có file nào được lưu.")
 
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not received_files:
@@ -122,26 +130,29 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⏰ <b>Thời gian:</b> {time_str}\n🆔 <b>ID:</b> <code>{msg_id}</code>"
     )
 
-# === Handler & lệnh Telegram ===
+# === Gắn handler ===
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(CommandHandler("list_ngay", list_files_by_date))
+application.add_handler(CommandHandler("export", export_csv))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
+# === Đăng ký lệnh Telegram ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu"),
         BotCommand("ping", "Kiểm tra bot"),
         BotCommand("menu", "Hiển thị menu"),
         BotCommand("list", "Xem file đã gửi"),
-        BotCommand("list_ngay", "Lọc theo ngày")
+        BotCommand("list_ngay", "Lọc theo ngày"),
+        BotCommand("export", "Tải log.csv")
     ])
 application.post_init = set_bot_commands
 
-# === Webhook Flask ===
+# === Webhook ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
@@ -151,7 +162,7 @@ def webhook():
 @app.route("/")
 def home(): return "🤖 Bot Telegram đang chạy!"
 
-# === Chạy Flask và bot song song ===
+# === Chạy bot và Flask song song ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
