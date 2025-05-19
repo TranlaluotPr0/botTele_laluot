@@ -12,25 +12,27 @@ from telegram.ext import (
 import pytz
 from datetime import datetime
 
-# === Google Sheets: dùng credentials trực tiếp ===
+# === Google Sheets: credentials trực tiếp ===
 import gspread
 from google.oauth2.service_account import Credentials
 
-raw_credential = '''{
+raw_credential = """
+{
   "type": "service_account",
   "project_id": "telegrambot-460310",
   "private_key_id": "da8c8924eead97d61c9bc4e2656fc624a7454a3b",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKY...\\n-----END PRIVATE KEY-----\\n",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCmkQFgcSZhyJL9\nCb/kwGH8MQVTp8mYty6wBJ3u2woQbE4buTKl1wrLXt+oTEdaEDx/le27RjN0hZAR\nKDoGfeK49nhctZZKeLUEm8C5am0EgXhqsBjHU2Qx4qgXgLWmZw+4snpQwwLOizps\nSMmRRqGg04pXYsmkoZKxOhpTYvRcMLjn109gTs1BXsuJtsvFSzZUTnzyK9TGbWLm\nEgYYWu+DL03wHicHgPILgQ1kMHUxeWPpUrXR0DrL2RpgLk2a/vPOENhKaUGbqxE9\nb0YbYlAp0q6k226/0v9vVvDYOXSJ9yTwF9sTZB8fe5OQxikIFwp5ETYfil/a0QS7\nu+BrO7RlAgMBAAECggEACoPkw6f3ZaMdNTbS2iGTbf5rcpFvZohivNjykXXBgZgc\nwp8WUllF6xQ4gWFQL21CX6zHq8cHdsEumNUVyK6H/04/LfcgUqyitnSqUR1ykWvz\nZD5tHTqnliCgpPWXdVBUGHOOYwY7AwgC4a6JdXYXvDvuiiXusRZ3WMatJJUYJ31D\nDY84Y/FLmGji3tHSXiTAosiU9nRIoZcJ/pLa39VNqICPVCcAhdbwBFqKVLHDlO8V\njzJImMx9YZhzA+cja2MsaPunGJxdwRON0tlbIvYqamQSEgrYyrcCd79timDuEyBL\nd66p0jsTqtPW+xX2URygNZwmW8jPbGRIpiIJFgM/twKBgQDRNW7jy3/AWf1h1DpT\ng4P0iXwKiMJMgKzgtdwG+TdLbCltVZfjME4JngzvelbuAuCfx94UBsHbggaX7YKY\naldO8sk0Hao5fbAt9fIJiE0AoXWbMr8bNBJxM3XLd2MbT+xMF9wfWwQffiqDIeJ4\nxd1Rja9uSk6xxTtg4zo7c6TgmwKBgQDL0gWk8uxYrU+Zm1s+ObodpFvYnDwBOSsQ\n/Daf7qLMAYBXM2Zc/Aer7PbcrOPDitM+40xjYT4d93gxzTRcGWiPuoM3h19OK6w2\nXDAiOgMwRopnEHaAoZaRSxBrigexAcMCYJgO8ztOX5dniNmXFTn+R8WNNAXnK8wv\n/nsSbd6O/wKBgFt/qiMY4qPG9+nsfyH9eB3gb47P52K8OGADSdsG7mcfRDMcZ1Sm\n0MqmBHRMpm5sdb+ME5XgqrKNeMLDzwVIJS1TRCp1+vgv/3jqg1Ql97+Z3izlke2c\n5Z/66L73VTIhz3AsU0qnbPM1I/S8QieeKkC73gk3mJlpcKHcX6CW4HqXAoGAD6vb\nUT54W60ftLDUSCmKHONZSINivblWjVzHGm7vx33KD2pdUYLzWA3FQVxtusg+y9QQ\nOIfujcFMVY/wmbA+cOanViqrckg7WoamEMujGSAjXh9O7T7/Y7aA0bPwOXToOJOS\nvXuIMNN6wbQs/sfcCKgeEWhRl9+vOHV5owYdmaMCgYB9V7G39iA+Wo44/JBzdhQ/\n6TxbmwnhtNzznWlfQ5WkJVVi+tm+PVQAoEJIUA76rFECumYjTW34n7cB1S6ODOrp\n3I6nIXMi525zogs9wM4gZSlifwUliNCJR7ULKcCZ+ZmEnRfeR3E7uHzzR5Cm9gN+\nflIHrPvjcoDNaboyg+/oKA==\n-----END PRIVATE KEY-----\n",
   "client_email": "telegram-bot-access@telegrambot-460310.iam.gserviceaccount.com",
   "client_id": "105115100495018451508",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/telegram-bot-access%40telegrambot-460310.iam.gserviceaccount.com",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/telegram-bot-access@telegrambot-460310.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
-}'''
+}
+"""
 
-credential_info = json.loads(raw_credential.replace("\\n", "\n"))
+credential_info = json.loads(raw_credential)
 scope = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_info(credential_info, scopes=scope)
 client = gspread.authorize(creds)
@@ -38,6 +40,7 @@ sheet = client.open_by_key("16Jq_50T8hKGkgLkvbDlydnsoN-eHXSamCRq06sLMy8").worksh
 
 def append_to_sheet(data):
     sheet.append_row([data["id"], data["name"], data["size"], data["time"]])
+
 
 # === Biến toàn cục ===
 event_loop = None
