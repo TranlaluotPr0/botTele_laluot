@@ -4,7 +4,7 @@ import asyncio
 import threading
 from dotenv import load_dotenv
 from flask import Flask, request
-from features.chon_ngay import chon_ngay, handle_ngay_callback
+from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
 from telegram import Update, BotCommand, ReplyKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, Application, CommandHandler,
@@ -234,6 +234,7 @@ application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 application.add_handler(CommandHandler("chon_ngay", chon_ngay))
 application.add_handler(CallbackQueryHandler(handle_ngay_callback))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ngay_text)) 
 
 # === Đăng ký menu / lệnh Telegram ===
 async def set_bot_commands(app: Application):
