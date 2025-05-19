@@ -1,37 +1,40 @@
 import os
 import asyncio
+import threading
 from dotenv import load_dotenv
 from flask import Flask, request
 from telegram import Update, BotCommand
 from telegram.ext import (
-    Application, ApplicationBuilder, CommandHandler,
+    ApplicationBuilder, Application, CommandHandler,
     MessageHandler, ContextTypes, filters
 )
 import pytz
 from datetime import datetime
 
-# === Load biến môi trường ===
+# === Load biến môi trường từ .env ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_HOST = os.getenv("WEBHOOK_HOST")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
-# === Flask App ===
+# === Flask app ===
 app = Flask(__name__)
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 received_files = []
 
-# === Telegram App ===
+# === Telegram bot app ===
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# === Command Handlers ===
+# === Command: /start ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
 
+# === Command: /ping ===
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏓 Bot đang hoạt động bình thường.")
 
+# === Command: /menu ===
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📋 Danh sách lệnh có sẵn:\n"
@@ -41,6 +44,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/list - Xem file đã gửi"
     )
 
+# === Command: /list ===
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not received_files:
         await update.message.reply_text("📭 Chưa có file nào được gửi.")
@@ -55,6 +59,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_html(text)
 
+# === Handle file gửi tới ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     if not doc:
@@ -80,13 +85,15 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID tin nhắn:</b> <code>{msg_id}</code>"
     )
 
+# === Đăng ký lệnh và handler ===
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-async def set_bot_commands(app):
+# === Set command menu trên Telegram ===
+async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu sử dụng bot"),
         BotCommand("ping", "Kiểm tra bot"),
@@ -95,25 +102,33 @@ async def set_bot_commands(app):
     ])
 application.post_init = set_bot_commands
 
-# === Webhook route ===
+# === Route Webhook ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.update_queue.put_nowait(update)
     return {"ok": True}
 
+# === Route root ===
 @app.route("/", methods=["GET"])
 def home():
     return "<h3>🤖 Bot Telegram đã triển khai thành công trên Render!</h3>"
 
-# === Run Flask + Set webhook ===
+# === Chạy bot và Flask song song ===
 if __name__ == "__main__":
+    def run_flask():
+        port = int(os.environ.get("PORT", 10000))
+        app.run(host="0.0.0.0", port=port)
+
     async def main():
         await application.bot.delete_webhook()
         await application.bot.set_webhook(WEBHOOK_URL)
         print(f"🚀 Webhook set tại: {WEBHOOK_URL}")
         await application.initialize()
         await application.start()
-        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
 
+    # Flask chạy trong thread riêng
+    threading.Thread(target=run_flask).start()
+
+    # Chạy Telegram bot
     asyncio.run(main())
