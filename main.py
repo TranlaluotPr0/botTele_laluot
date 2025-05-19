@@ -51,7 +51,10 @@ WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
+application.post_init = set_bot_commands  # ✅ Đặt ở đây để bot có "Menu" mặc định
+
 load_from_csv()
+
 
 # === Lệnh bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
