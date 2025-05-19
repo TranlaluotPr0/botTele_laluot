@@ -1,105 +1,57 @@
 import os
-import asyncio
-from datetime import datetime
-from aiohttp import web  # 👈 Thêm dòng này
-from telegram import Update
+from dotenv import load_dotenv
+from telegram import Update, BotCommand
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+    ApplicationBuilder, CommandHandler, ContextTypes
 )
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4")
-WEBHOOK_HOST = "https://trannguyengiadat-tele.onrender.com"
-WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
-PORT = int(os.environ.get("PORT", 8443))
+# Load biến môi trường từ .env
+load_dotenv()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-saved_files = {}
-
-# Command handlers
+# Hàm xử lý /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("✅ /start received")  # 👈 log kiểm tra
+    await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
+
+# Hàm xử lý /ping
+async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🏓 Bot đang hoạt động bình thường.")
+
+# Hàm xử lý /menu
+async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📖 Hướng dẫn:\n"
-        "/start - Khởi động bot\n"
-        "/files - Danh sách tất cả file\n"
-        "/files YYYY-MM-DD - Lọc file theo ngày\n"
-        "/delete <file_id> - Xoá file khỏi danh sách\n"
-        "/stats - Thống kê số file đã lưu"
+        "📋 Danh sách lệnh có sẵn:\n"
+        "/start - Bắt đầu\n"
+        "/ping - Kiểm tra trạng thái bot\n"
+        "/menu - Hiển thị menu lệnh"
     )
 
-async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    args = context.args
-    filtered = saved_files
-    if args:
-        date_filter = args[0]
-        filtered = {fid: info for fid, info in saved_files.items() if info["date"].startswith(date_filter)}
-    if not filtered:
-        await update.message.reply_text("📂 Không có file nào.")
-        return
-    text = "\n".join([f"🗂️ `{info['name']}` - {info['size']} MB - `{fid}`" for fid, info in filtered.items()])
-    await update.message.reply_text(f"📁 Danh sách file:\n{text}", parse_mode="Markdown")
+# Đăng ký các lệnh vào Telegram Bot API (hiển thị trong menu Telegram)
+async def setup_bot_commands(application):
+    commands = [
+        BotCommand("start", "Bắt đầu sử dụng bot"),
+        BotCommand("ping", "Kiểm tra trạng thái bot"),
+        BotCommand("menu", "Xem danh sách chức năng")
+    ]
+    await application.bot.set_my_commands(commands)
 
-async def delete_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    args = context.args
-    if not args:
-        await update.message.reply_text("⚠️ Dùng đúng: /delete <file_id>", parse_mode="Markdown")
-        return
-    file_id = args[0]
-    if file_id in saved_files:
-        name = saved_files[file_id]["name"]
-        del saved_files[file_id]
-        await update.message.reply_text(f"🗑️ Đã xoá `{name}`.", parse_mode="Markdown")
-    else:
-        await update.message.reply_text("❌ Không tìm thấy file.")
+# Chạy bot
+def main():
+    if not BOT_TOKEN:
+        raise ValueError("❌ Không tìm thấy BOT_TOKEN trong biến môi trường!")
 
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    count = len(saved_files)
-    total_size = sum(info["size"] for info in saved_files.values())
-    await update.message.reply_text(f"📊 Có {count} file, tổng {total_size:.2f} MB")
-
-async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    document = update.message.document
-    if document:
-        file_id = document.file_id
-        name = document.file_name
-        size = round(document.file_size / 1024 / 1024, 2)
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        for _, info in saved_files.items():
-            if info["name"] == name:
-                await update.message.reply_text(f"⚠️ File trùng tên: `{name}`", parse_mode="Markdown")
-                return
-            if abs(info["size"] - size) < 0.01:
-                await update.message.reply_text(f"⚠️ File trùng dung lượng: {size} MB", parse_mode="Markdown")
-                return
-
-        saved_files[file_id] = {"name": name, "size": size, "date": now}
-        await update.message.reply_text(f"✅ Đã lưu file `{name}` ({size} MB)", parse_mode="Markdown")
-
-# ---------- CHẠY BOT DÙNG WEBHOOK + AIOHTTP ----------
-async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Đăng ký handler
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("files", list_files))
-    app.add_handler(CommandHandler("delete", delete_file))
-    app.add_handler(CommandHandler("stats", stats))
-    app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
+    app.add_handler(CommandHandler("ping", ping))
+    app.add_handler(CommandHandler("menu", menu))
 
-    await app.bot.set_webhook(WEBHOOK_URL)
-    print(f"🤖 Webhook đã set tại {WEBHOOK_URL}")
-    return app
+    # Thiết lập menu lệnh
+    app.post_init = setup_bot_commands
+
+    print("🚀 Bot Telegram đã sẵn sàng...")
+    app.run_polling()
 
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    app = loop.run_until_complete(main())
-
-    # 👇 web_app cần thiết để Render xử lý đúng route /webhook
-    aiohttp_app = web.Application()
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=WEBHOOK_URL,
-        web_app=aiohttp_app  # 👈 thêm dòng này để Telegram không lỗi 404
-    )
+    main()
