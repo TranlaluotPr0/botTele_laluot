@@ -1,5 +1,6 @@
 import os
 import pytz
+import threading
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, BotCommand, Document
@@ -8,13 +9,27 @@ from telegram.ext import (
     MessageHandler, filters
 )
 
-# Load biến môi trường từ .env
+# Giữ kết nối cho Render không timeout cổng
+import http.server
+import socketserver
+
+def keep_render_alive():
+    port = int(os.environ.get("PORT", 10000))
+    Handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", port), Handler) as httpd:
+        httpd.serve_forever()
+
+threading.Thread(target=keep_render_alive, daemon=True).start()
+
+# Load biến môi trường
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# Danh sách lưu file đã nhận (RAM)
-received_files = []
+# Khu vực giờ VN
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
+
+# Lưu danh sách file đã nhận
+received_files = []
 
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -51,7 +66,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_html(text)
 
-# Nhận file
+# Khi người dùng gửi file
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     document: Document = update.message.document
     if not document:
@@ -63,12 +78,13 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sent_time = update.message.date.astimezone(vn_tz)
     readable_time = sent_time.strftime("%H:%M:%S %d-%m-%Y")
 
+    # Chuyển đơn vị
     if file_size >= 1024 * 1024:
         size_text = f"{file_size / (1024 * 1024):.2f} MB"
     else:
         size_text = f"{file_size / 1024:.2f} KB"
 
-    # Lưu vào danh sách
+    # Lưu lại
     received_files.append({
         "id": message_id,
         "name": file_name,
@@ -83,7 +99,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID tin nhắn:</b> <code>{message_id}</code>"
     )
 
-# Đăng ký lệnh menu Telegram
+# Đăng ký lệnh
 async def setup_bot_commands(app):
     commands = [
         BotCommand("start", "Bắt đầu sử dụng bot"),
@@ -93,14 +109,13 @@ async def setup_bot_commands(app):
     ]
     await app.bot.set_my_commands(commands)
 
-# Chạy bot
+# Main
 def main():
     if not BOT_TOKEN:
-        raise ValueError("❌ Không tìm thấy BOT_TOKEN trong biến môi trường!")
+        raise ValueError("❌ Không tìm thấy BOT_TOKEN!")
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ping", ping))
     app.add_handler(CommandHandler("menu", menu))
@@ -109,7 +124,7 @@ def main():
 
     app.post_init = setup_bot_commands
 
-    print("🚀 Bot Telegram đã sẵn sàng...")
+    print("🚀 Bot Telegram đã sẵn sàng (polling)...")
     app.run_polling()
 
 if __name__ == "__main__":
