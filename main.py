@@ -13,29 +13,44 @@ from telegram.ext import (
 import pytz
 from datetime import datetime
 
-# === Ghi dữ liệu vào CSV ===
+# === Ghi + Đọc CSV ===
 def append_to_csv(data):
     with open("log.csv", "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         writer.writerow([data["id"], data["name"], data["size"], data["time"]])
 
+def load_from_csv():
+    if not os.path.exists("log.csv"):
+        return
+    with open("log.csv", "r", encoding="utf-8-sig") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) == 4:
+                received_files.append({
+                    "id": int(row[0]),
+                    "name": row[1],
+                    "size": row[2],
+                    "time": row[3]
+                })
+
 # === Biến toàn cục ===
 event_loop = None
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 received_files = []
+load_from_csv()
 
-# === Load biến môi trường ===
+# === Load .env ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 
-# === Flask + Telegram app ===
+# === Flask + Telegram App ===
 app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# === Các lệnh bot ===
+# === Lệnh Bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
 
@@ -44,13 +59,15 @@ async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📋 Danh sách lệnh có sẵn:\n"
+        "📋 Danh sách lệnh:\n"
         "/start - Bắt đầu\n"
         "/ping - Kiểm tra bot\n"
-        "/menu - Danh sách lệnh\n"
-        "/list - Xem file đã gửi\n"
-        "/list_ngay <dd-mm-yyyy> - Lọc file theo ngày\n"
-        "/export - Tải log.csv"
+        "/menu - Hiển thị lệnh\n"
+        "/list - Xem tất cả file\n"
+        "/list_ngay <dd-mm-yyyy> - Lọc theo ngày\n"
+        "/filter_size <min> <max> - Lọc theo dung lượng MB\n"
+        "/export - Tải file log.csv\n"
+        "/import - Tải lại log từ file CSV"
     )
 
 async def export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,12 +77,22 @@ async def export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ Chưa có file nào được lưu.")
 
+async def import_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.document or not update.message.document.file_name.endswith(".csv"):
+        await update.message.reply_text("❌ Vui lòng gửi kèm file log.csv.")
+        return
+    file = await update.message.document.get_file()
+    await file.download_to_drive("log.csv")
+    received_files.clear()
+    load_from_csv()
+    await update.message.reply_text("✅ Đã nạp lại dữ liệu từ log.csv.")
+
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not received_files:
-        await update.message.reply_text("📭 Chưa có file nào được gửi.")
+        await update.message.reply_text("📭 Chưa có file nào.")
         return
     username = context.bot.username
-    text = "📂 Danh sách file đã gửi:\n\n"
+    text = "📂 Danh sách file:\n\n"
     for f in received_files:
         text += (
             f"🆔 <b>ID:</b> <a href='tg://resolve?domain={username}&message_id={f['id']}'>{f['id']}</a>\n"
@@ -79,15 +106,15 @@ async def list_files_by_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not context.args:
         await update.message.reply_text("📅 Dùng: /list_ngay dd-mm-yyyy")
         return
-    filter_date = context.args[0].strip()
     try:
+        filter_date = context.args[0].strip()
         datetime.strptime(filter_date, "%d-%m-%Y")
         username = context.bot.username
         filtered = [f for f in received_files if f["time"].endswith(filter_date)]
         if not filtered:
-            await update.message.reply_text(f"❌ Không có file nào ngày {filter_date}.")
+            await update.message.reply_text("❌ Không có file nào ngày đó.")
             return
-        text = f"📅 File gửi ngày {filter_date}:\n\n"
+        text = f"📅 File ngày {filter_date}:\n\n"
         for f in filtered:
             text += (
                 f"🆔 <b>ID:</b> <a href='tg://resolve?domain={username}&message_id={f['id']}'>{f['id']}</a>\n"
@@ -99,7 +126,35 @@ async def list_files_by_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except ValueError:
         await update.message.reply_text("❌ Sai định dạng. Dùng: /list_ngay 19-05-2025")
 
-# === Xử lý file ===
+async def filter_by_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) != 2:
+        await update.message.reply_text("📏 Dùng: /filter_size <min_MB> <max_MB>")
+        return
+    try:
+        min_mb = float(context.args[0])
+        max_mb = float(context.args[1])
+        username = context.bot.username
+        matched = []
+        for f in received_files:
+            size_str = f["size"]
+            size_mb = float(size_str.replace("MB", "").strip()) if "MB" in size_str else float(size_str.replace("KB", "").strip()) / 1024
+            if min_mb <= size_mb <= max_mb:
+                matched.append(f)
+        if not matched:
+            await update.message.reply_text("⚠️ Không có file trong khoảng đó.")
+            return
+        text = f"📦 File từ {min_mb}MB đến {max_mb}MB:\n\n"
+        for f in matched:
+            text += (
+                f"🆔 <b>ID:</b> <a href='tg://resolve?domain={username}&message_id={f['id']}'>{f['id']}</a>\n"
+                f"📄 <b>Tên:</b> {f['name']}\n"
+                f"📦 <b>Dung lượng:</b> {f['size']}\n"
+                f"⏰ <b>Thời gian:</b> {f['time']}\n───\n"
+            )
+        await update.message.reply_html(text, disable_web_page_preview=True)
+    except Exception as e:
+        await update.message.reply_text(f"❌ Lỗi: {e}")
+
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     if not doc: return
@@ -111,11 +166,12 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     received_files.append(data)
     append_to_csv(data)
     await update.message.reply_html(
-        f"📄 <b>Tên file:</b> {doc.file_name}\n📦 <b>Dung lượng:</b> {size}\n"
-        f"⏰ <b>Thời gian:</b> {time_str}\n🆔 <b>ID:</b> <code>{msg_id}</code>"
+        f"📄 <b>Tên file:</b> {doc.file_name}\n"
+        f"📦 <b>Dung lượng:</b> {size}\n"
+        f"⏰ <b>Thời gian:</b> {time_str}\n"
+        f"🆔 <b>ID:</b> <code>{msg_id}</code>"
     )
 
-# === Xử lý ảnh ===
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
     msg_id = update.message.message_id
@@ -126,8 +182,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     received_files.append(data)
     append_to_csv(data)
     await update.message.reply_html(
-        f"🖼 <b>Ảnh nhận được</b>\n📦 <b>Dung lượng:</b> {size}\n"
-        f"⏰ <b>Thời gian:</b> {time_str}\n🆔 <b>ID:</b> <code>{msg_id}</code>"
+        f"🖼 <b>Ảnh nhận được</b>\n"
+        f"📦 <b>Dung lượng:</b> {size}\n"
+        f"⏰ <b>Thời gian:</b> {time_str}\n"
+        f"🆔 <b>ID:</b> <code>{msg_id}</code>"
     )
 
 # === Gắn handler ===
@@ -137,6 +195,8 @@ application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(CommandHandler("list_ngay", list_files_by_date))
 application.add_handler(CommandHandler("export", export_csv))
+application.add_handler(CommandHandler("import", import_csv))
+application.add_handler(CommandHandler("filter_size", filter_by_size))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
@@ -148,11 +208,13 @@ async def set_bot_commands(app: Application):
         BotCommand("menu", "Hiển thị menu"),
         BotCommand("list", "Xem file đã gửi"),
         BotCommand("list_ngay", "Lọc theo ngày"),
-        BotCommand("export", "Tải log.csv")
+        BotCommand("filter_size", "Lọc dung lượng"),
+        BotCommand("export", "Tải log.csv"),
+        BotCommand("import", "Nạp lại log.csv")
     ])
 application.post_init = set_bot_commands
 
-# === Webhook ===
+# === Webhook Flask ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
@@ -162,10 +224,11 @@ def webhook():
 @app.route("/")
 def home(): return "🤖 Bot Telegram đang chạy!"
 
-# === Chạy bot và Flask song song ===
+# === Khởi động song song ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
     async def main():
         global event_loop
         event_loop = asyncio.get_event_loop()
@@ -173,5 +236,6 @@ if __name__ == "__main__":
         await application.bot.set_webhook(WEBHOOK_URL)
         await application.initialize()
         await application.start()
+
     threading.Thread(target=run_flask).start()
     asyncio.run(main())
