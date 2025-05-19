@@ -45,7 +45,8 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - Bắt đầu\n"
         "/ping - Kiểm tra bot\n"
         "/menu - Danh sách lệnh\n"
-        "/list - Xem file đã gửi"
+        "/list - Xem file đã gửi\n"
+        "/list_ngay <dd-mm-yyyy> - Lọc file theo ngày"
     )
 
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -53,15 +54,52 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not received_files:
         await update.message.reply_text("📭 Chưa có file nào được gửi.")
         return
+
+    username = context.bot.username
     text = "📂 Danh sách file đã gửi:\n\n"
     for f in received_files:
         text += (
-            f"🆔 <b>ID:</b> <code>{f['id']}</code>\n"
+            f"🆔 <b>ID:</b> <a href='tg://resolve?domain={username}&message_id={f['id']}'>{f['id']}</a>\n"
             f"📄 <b>Tên:</b> {f['name']}\n"
             f"📦 <b>Dung lượng:</b> {f['size']}\n"
             f"⏰ <b>Thời gian:</b> {f['time']}\n───\n"
         )
-    await update.message.reply_html(text)
+
+    await update.message.reply_html(text, disable_web_page_preview=True)
+
+async def list_files_by_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not received_files:
+        await update.message.reply_text("📭 Chưa có file nào được gửi.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("📅 Vui lòng nhập ngày theo định dạng: /list_ngay dd-mm-yyyy")
+        return
+
+    try:
+        filter_date = context.args[0].strip()
+        datetime.strptime(filter_date, "%d-%m-%Y")  # Kiểm tra định dạng
+
+        username = context.bot.username
+        filtered = [f for f in received_files if f["time"].endswith(filter_date)]
+
+        if not filtered:
+            await update.message.reply_text(f"❌ Không có file nào gửi vào ngày {filter_date}.")
+            return
+
+        text = f"📅 Danh sách file gửi ngày {filter_date}:\n\n"
+        for f in filtered:
+            text += (
+                f"🆔 <b>ID:</b> <a href='tg://resolve?domain={username}&message_id={f['id']}'>{f['id']}</a>\n"
+                f"📄 <b>Tên:</b> {f['name']}\n"
+                f"📦 <b>Dung lượng:</b> {f['size']}\n"
+                f"⏰ <b>Thời gian:</b> {f['time']}\n───\n"
+            )
+
+        await update.message.reply_html(text, disable_web_page_preview=True)
+
+    except ValueError:
+        await update.message.reply_text("❌ Sai định dạng ngày. Dùng: /list_ngay 19-05-2025")
 
 # === Xử lý file document ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -96,7 +134,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.photo:
         return
 
-    photo = update.message.photo[-1]  # Ảnh độ phân giải cao nhất
+    photo = update.message.photo[-1]
     msg_id = update.message.message_id
     sent_time = update.message.date.astimezone(vn_tz)
     readable_time = sent_time.strftime("%H:%M:%S %d-%m-%Y")
@@ -124,16 +162,18 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
+application.add_handler(CommandHandler("list_ngay", list_files_by_date))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# === Đăng ký menu lệnh ===
+# === Đăng ký menu lệnh Telegram ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu sử dụng bot"),
         BotCommand("ping", "Kiểm tra bot"),
         BotCommand("menu", "Hiển thị menu lệnh"),
-        BotCommand("list", "Xem danh sách file")
+        BotCommand("list", "Xem danh sách file"),
+        BotCommand("list_ngay", "Lọc file theo ngày gửi")
     ])
 application.post_init = set_bot_commands
 
@@ -145,7 +185,6 @@ def webhook():
 
     update = Update.de_json(update_data, application.bot)
 
-    # ✅ Gọi coroutine an toàn qua loop chính
     asyncio.run_coroutine_threadsafe(
         application.process_update(update),
         event_loop
