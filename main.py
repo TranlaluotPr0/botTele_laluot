@@ -1,32 +1,32 @@
 import os
 from dotenv import load_dotenv
+from flask import Flask, request
 from telegram import Update, BotCommand
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     ContextTypes, filters
 )
-from flask import Flask, request
 import logging
 import pytz
 from datetime import datetime
 
-# === Cấu hình Flask server cho webhook ===
+# === Flask app để xử lý webhook ===
 app_flask = Flask(__name__)
 
 # === Load biến môi trường ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://trannguyengiadat-tele.onrender.com")  # <- Đổi tên app của bạn tại đây
-WEBHOOK_PATH = f"/webhook"
+WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://trannguyengiadat-tele.onrender.com/")
+WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
 # === Khu vực giờ Việt Nam ===
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 
-# === Bộ nhớ file đã gửi ===
+# === Bộ nhớ tạm để lưu file đã nhận ===
 received_files = []
 
-# === Lệnh cơ bản ===
+# === Lệnh bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
 
@@ -85,7 +85,18 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID tin nhắn:</b> <code>{msg_id}</code>"
     )
 
-# === Khởi tạo ứng dụng Telegram ===
+# === Route gốc để tránh lỗi 404 trên Render ===
+@app_flask.route("/", methods=["GET"])
+def home():
+    return "<h3>🤖 Bot Telegram đã triển khai thành công trên Render!</h3>", 200
+
+# === Route webhook để nhận dữ liệu từ Telegram ===
+@app_flask.route(WEBHOOK_PATH, methods=["POST"])
+async def webhook():
+    await telegram_app.update_queue.put(Update.de_json(request.get_json(force=True), telegram_app.bot))
+    return {"ok": True}
+
+# === Tạo Telegram App ===
 telegram_app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 telegram_app.add_handler(CommandHandler("start", start))
@@ -94,25 +105,19 @@ telegram_app.add_handler(CommandHandler("menu", menu))
 telegram_app.add_handler(CommandHandler("list", list_files))
 telegram_app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-# === Đăng ký menu lệnh Telegram ===
+# === Đăng ký lệnh /menu vào Telegram ===
 async def setup_bot_commands(app):
     commands = [
         BotCommand("start", "Bắt đầu sử dụng bot"),
-        BotCommand("ping", "Kiểm tra trạng thái bot"),
-        BotCommand("menu", "Xem danh sách chức năng"),
-        BotCommand("list", "Xem file đã gửi")
+        BotCommand("ping", "Kiểm tra bot"),
+        BotCommand("menu", "Hiển thị menu lệnh"),
+        BotCommand("list", "Xem danh sách file")
     ]
     await app.bot.set_my_commands(commands)
 
 telegram_app.post_init = setup_bot_commands
 
-# === Định nghĩa endpoint webhook cho Flask ===
-@app_flask.route(WEBHOOK_PATH, methods=["POST"])
-async def webhook():
-    await telegram_app.update_queue.put(Update.de_json(request.get_json(force=True), telegram_app.bot))
-    return {"ok": True}
-
-# === Khởi động server ===
+# === Khởi động Flask + Telegram app ===
 if __name__ == "__main__":
     import asyncio
 
