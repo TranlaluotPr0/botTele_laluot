@@ -1,4 +1,5 @@
 import os
+import asyncio
 from dotenv import load_dotenv
 from flask import Flask, request
 from telegram import Update, BotCommand
@@ -6,7 +7,6 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     ContextTypes, filters
 )
-import logging
 import pytz
 from datetime import datetime
 
@@ -16,7 +16,7 @@ app_flask = Flask(__name__)
 # === Load biến môi trường ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://trannguyengiadat-tele.onrender.com/")
+WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://trannguyengiadat-tele.onrender.com")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
@@ -90,10 +90,11 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def home():
     return "<h3>🤖 Bot Telegram đã triển khai thành công trên Render!</h3>", 200
 
-# === Route webhook để nhận dữ liệu từ Telegram ===
+# === Route webhook đồng bộ để tránh lỗi Flask async ===
 @app_flask.route(WEBHOOK_PATH, methods=["POST"])
-async def webhook():
-    await telegram_app.update_queue.put(Update.de_json(request.get_json(force=True), telegram_app.bot))
+def webhook():
+    update = Update.de_json(request.get_json(force=True), telegram_app.bot)
+    asyncio.create_task(telegram_app.update_queue.put(update))
     return {"ok": True}
 
 # === Tạo Telegram App ===
@@ -105,7 +106,7 @@ telegram_app.add_handler(CommandHandler("menu", menu))
 telegram_app.add_handler(CommandHandler("list", list_files))
 telegram_app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-# === Đăng ký lệnh /menu vào Telegram ===
+# === Đăng ký menu Telegram ===
 async def setup_bot_commands(app):
     commands = [
         BotCommand("start", "Bắt đầu sử dụng bot"),
@@ -117,10 +118,8 @@ async def setup_bot_commands(app):
 
 telegram_app.post_init = setup_bot_commands
 
-# === Khởi động Flask + Telegram app ===
+# === Khởi động Flask + Telegram bot ===
 if __name__ == "__main__":
-    import asyncio
-
     async def main():
         await telegram_app.bot.delete_webhook()
         await telegram_app.bot.set_webhook(WEBHOOK_URL)
