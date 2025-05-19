@@ -4,8 +4,7 @@ import asyncio
 import threading
 from dotenv import load_dotenv
 from flask import Flask, request
-from telegram import Update, BotCommand
-from telegram.constants import ChatAction
+from telegram import Update, BotCommand, ReplyKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, Application, CommandHandler,
     MessageHandler, ContextTypes, filters
@@ -55,7 +54,16 @@ load_from_csv()
 
 # === Lệnh bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
+    keyboard = [
+        ["/menu", "/list"],
+        ["/export", "/import"],
+        ["/filter_size", "/list_ngay"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text(
+        "👋 Xin chào! Dưới đây là menu nhanh, hoặc bạn có thể gõ /menu để xem tất cả chức năng.",
+        reply_markup=reply_markup
+    )
 
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏓 Bot đang hoạt động bình thường.")
@@ -151,7 +159,7 @@ async def filter_by_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("❌ Lỗi định dạng. Dùng: /filter_size <min> <max>")
 
-# === Xử lý document & import ===
+# === Xử lý file và ảnh ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     user_id = update.effective_user.id
@@ -165,7 +173,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"✅ Đã nhập {len(received_files)} file từ log.csv.")
         return
 
-    # Xử lý file thường
     file_name = doc.file_name
     file_size = doc.file_size
     msg_id = update.message.message_id
@@ -183,7 +190,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID:</b> <code>{msg_id}</code>"
     )
 
-# === Xử lý ảnh ===
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
     msg_id = update.message.message_id
@@ -214,7 +220,7 @@ application.add_handler(CommandHandler("import", import_csv))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# === Đăng ký lệnh Telegram để hiện Menu ===
+# === Đăng ký menu / lệnh Telegram ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu"),
@@ -227,9 +233,9 @@ async def set_bot_commands(app: Application):
         BotCommand("import", "Nhập từ file log.csv")
     ])
 
-application.post_init = set_bot_commands  # ✅ Gán sau khi định nghĩa hàm
+application.post_init = set_bot_commands
 
-# === Flask webhook route ===
+# === Webhook route ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
@@ -239,7 +245,7 @@ def webhook():
 @app.route("/")
 def home(): return "<h3>🤖 Bot Telegram đang chạy!</h3>"
 
-# === Chạy song song Flask và Telegram ===
+# === Chạy Flask và Telegram song song ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
