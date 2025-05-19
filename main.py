@@ -2,7 +2,8 @@ import os
 from datetime import datetime
 from telegram import Update
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+    ApplicationBuilder, CommandHandler, MessageHandler,
+    ContextTypes, filters
 )
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "7548237225:AAFjkvaYLHIkIDXGe3k_LxwNlW17gQPgHD4")
@@ -59,7 +60,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_size = sum(info["size"] for info in saved_files.values())
     await update.message.reply_text(f"📊 Có {count} file, tổng {total_size:.2f} MB")
 
-# /document
+# Xử lý file gửi lên
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     document = update.message.document
     if document:
@@ -79,30 +80,37 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         saved_files[file_id] = {"name": name, "size": size, "date": now}
         await update.message.reply_text(f"✅ Đã lưu file `{name}` ({size} MB)", parse_mode="Markdown")
 
-
-# ---- MAIN CHẠY WEBHOOK ĐÚNG ----
+# --- Main function ---
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Đăng ký command handler
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("files", list_files))
     app.add_handler(CommandHandler("delete", delete_file))
     app.add_handler(CommandHandler("stats", stats))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-    # Đăng ký webhook chính xác cho Telegram
+    # Set webhook đúng cho Telegram
     await app.bot.set_webhook(WEBHOOK_URL)
     print(f"🤖 Webhook đã set tại {WEBHOOK_URL}")
 
-    # Khởi chạy app với webhook
+    # Khởi chạy webhook
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL
     )
 
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+# --- Xử lý chạy event loop ---
+import asyncio
 
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except RuntimeError as e:
+        if "already running" in str(e):
+            loop = asyncio.get_event_loop()
+            loop.create_task(main())
+            loop.run_forever()
+        else:
+            raise e
