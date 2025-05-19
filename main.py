@@ -8,7 +8,8 @@ from features.chon_ngay import chon_ngay, handle_ngay_callback
 from telegram import Update, BotCommand, ReplyKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, Application, CommandHandler,
-    MessageHandler, ContextTypes, filters
+    MessageHandler, CallbackQueryHandler,  # ✅ thêm dòng này
+    ContextTypes, filters
 )
 import pytz
 from datetime import datetime
