@@ -15,7 +15,7 @@ from datetime import datetime
 
 # === Ghi dữ liệu vào CSV ===
 def append_to_csv(data):
-    with open("log.csv", "a", newline="", encoding="utf-8") as f:
+    with open("log.csv", "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         writer.writerow([data["id"], data["name"], data["size"], data["time"]])
 
