@@ -59,6 +59,22 @@ load_from_csv()
 application.bot_data["received_files"] = received_files  # rất quan trọng!
 
 # === Lệnh cơ bản ===
+async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not received_files:
+        await update.message.reply_text("📭 Chưa có file nào.")
+        return
+
+    username = context.bot.username
+    text = "📂 Danh sách file:\n\n"
+    for f in received_files:
+        text += (
+            f"🆔 <b>ID:</b> <a href='tg://resolve?domain={username}&message_id={f['id']}'>{f['id']}</a>\n"
+            f"📄 <b>Tên:</b> {f['name']}\n"
+            f"📦 <b>Dung lượng:</b> {f['size']}\n"
+            f"⏰ <b>Thời gian:</b> {f['time']}\n───\n"
+        )
+    await update.message.reply_html(text, disable_web_page_preview=True)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["/menu", "/chuc_nang"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
