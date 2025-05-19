@@ -265,7 +265,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("help", help_command))
-application.add_handler(CommandHandler("menu", chuc_nang))
+application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("chuc_nang", chuc_nang))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(CommandHandler("list_ngay", list_files_by_date))
