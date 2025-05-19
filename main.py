@@ -1,6 +1,7 @@
 import os
 import asyncio
 from datetime import datetime
+from aiohttp import web  # 👈 Thêm dòng này
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
@@ -16,6 +17,7 @@ saved_files = {}
 
 # Command handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("✅ /start received")  # 👈 log kiểm tra
     await update.message.reply_text(
         "📖 Hướng dẫn:\n"
         "/start - Khởi động bot\n"
@@ -74,7 +76,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         saved_files[file_id] = {"name": name, "size": size, "date": now}
         await update.message.reply_text(f"✅ Đã lưu file `{name}` ({size} MB)", parse_mode="Markdown")
 
-# ---------- CHẠY BOT DÙNG EVENT LOOP TỰ TẠO ----------
+# ---------- CHẠY BOT DÙNG WEBHOOK + AIOHTTP ----------
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -86,15 +88,18 @@ async def main():
 
     await app.bot.set_webhook(WEBHOOK_URL)
     print(f"🤖 Webhook đã set tại {WEBHOOK_URL}")
-
     return app
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     app = loop.run_until_complete(main())
+
+    # 👇 web_app cần thiết để Render xử lý đúng route /webhook
+    aiohttp_app = web.Application()
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        webhook_url=WEBHOOK_URL
+        webhook_url=WEBHOOK_URL,
+        web_app=aiohttp_app  # 👈 thêm dòng này để Telegram không lỗi 404
     )
