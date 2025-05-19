@@ -23,10 +23,10 @@ app = Flask(__name__)
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 received_files = []
 
-# === Telegram app ===
+# === Telegram Application ===
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# === Command handlers ===
+# === Các lệnh bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"📥 /start từ {update.effective_user.username}")
     await update.message.reply_text("👋 Xin chào! Gõ /menu để xem các chức năng.")
@@ -60,6 +60,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_html(text)
 
+# === Xử lý file gửi đến ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     if not doc:
@@ -87,7 +88,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <b>ID tin nhắn:</b> <code>{msg_id}</code>"
     )
 
-# === Gắn các handler vào bot ===
+# === Gắn handler ===
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("ping", ping))
 application.add_handler(CommandHandler("menu", menu))
@@ -104,21 +105,24 @@ async def set_bot_commands(app: Application):
     ])
 application.post_init = set_bot_commands
 
-# === Flask route cho Telegram Webhook ===
+# === Route webhook Flask ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update_data = request.get_json(force=True)
-    print("📩 Nhận dữ liệu webhook:", update_data)  # ✅ Kiểm tra webhook gọi đúng
+    print("📩 Nhận dữ liệu webhook:", update_data)
+
     update = Update.de_json(update_data, application.bot)
-    application.update_queue.put_nowait(update)
+
+    # 🔧 DÙNG cách xử lý đúng với asyncio event loop
+    asyncio.create_task(application.process_update(update))
+
     return {"ok": True}
 
-# === Trang chủ ===
 @app.route("/", methods=["GET"])
 def home():
     return "<h3>🤖 Bot Telegram đã triển khai thành công trên Render!</h3>"
 
-# === Chạy bot và flask song song ===
+# === Chạy Flask và bot song song ===
 if __name__ == "__main__":
     def run_flask():
         port = int(os.environ.get("PORT", 10000))
