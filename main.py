@@ -51,10 +51,7 @@ WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-application.post_init = set_bot_commands  # ✅ Đặt ở đây để bot có "Menu" mặc định
-
 load_from_csv()
-
 
 # === Lệnh bot ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -217,7 +214,7 @@ application.add_handler(CommandHandler("import", import_csv))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# === Đăng ký lệnh Telegram ===
+# === Đăng ký lệnh Telegram để hiện Menu ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu"),
@@ -229,7 +226,8 @@ async def set_bot_commands(app: Application):
         BotCommand("export", "Tải log.csv"),
         BotCommand("import", "Nhập từ file log.csv")
     ])
-application.post_init = set_bot_commands
+
+application.post_init = set_bot_commands  # ✅ Gán sau khi định nghĩa hàm
 
 # === Flask webhook route ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
