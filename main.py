@@ -27,19 +27,23 @@ def load_from_csv():
     with open("log.csv", "r", encoding="utf-8-sig") as f:
         reader = csv.reader(f)
         for row in reader:
-            if len(row) == 4:
-                received_files.append({
+            if len(row) >= 4:
+                file_data = {
                     "id": int(row[0]),
                     "name": row[1],
                     "size": row[2],
                     "time": row[3]
-                })
+                }
+                if len(row) >= 5:
+                    file_data["file_id"] = row[4]
+                received_files.append(file_data)
+
 
 # === Ghi log vào file CSV ===
 def append_to_csv(data):
     with open("log.csv", "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
-        writer.writerow([data["id"], data["name"], data["size"], data["time"]])
+        writer.writerow([data["id"], data["name"], data["size"], data["time"], data.get("file_id", "")])
 
 # Tải từ .env
 load_dotenv()
@@ -182,7 +186,13 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sent_time = update.message.date.astimezone(vn_tz)
     time_str = sent_time.strftime("%H:%M:%S %d-%m-%Y")
     size_text = f"{file_size/1024:.2f} KB" if file_size < 1024*1024 else f"{file_size/1024/1024:.2f} MB"
-    data = {"id": msg_id, "name": file_name, "size": size_text, "time": time_str}
+    data = {
+    "id": msg_id,
+    "name": file_name,
+    "size": size_text,
+    "time": time_str,
+    "file_id": doc.file_id  # ⬅ thêm dòng này
+}
     received_files.append(data)
     append_to_csv(data)
 
