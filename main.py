@@ -11,6 +11,9 @@ from telegram.ext import (
 import pytz
 from datetime import datetime
 
+# === Biến toàn cục để giữ event loop chính ===
+event_loop = None
+
 # === Load biến môi trường ===
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -23,7 +26,7 @@ app = Flask(__name__)
 vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
 received_files = []
 
-# === Telegram Application ===
+# === Telegram bot application ===
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # === Các lệnh bot ===
@@ -60,7 +63,6 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_html(text)
 
-# === Xử lý file gửi đến ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     if not doc:
@@ -95,7 +97,7 @@ application.add_handler(CommandHandler("menu", menu))
 application.add_handler(CommandHandler("list", list_files))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 
-# === Gắn menu lệnh Telegram ===
+# === Đăng ký menu lệnh ===
 async def set_bot_commands(app: Application):
     await app.bot.set_my_commands([
         BotCommand("start", "Bắt đầu sử dụng bot"),
@@ -105,7 +107,7 @@ async def set_bot_commands(app: Application):
     ])
 application.post_init = set_bot_commands
 
-# === Route webhook Flask ===
+# === Flask route nhận webhook ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update_data = request.get_json(force=True)
@@ -113,8 +115,11 @@ def webhook():
 
     update = Update.de_json(update_data, application.bot)
 
-    # 🔧 DÙNG cách xử lý đúng với asyncio event loop
-    asyncio.create_task(application.process_update(update))
+    # ✅ Gọi coroutine an toàn qua loop chính
+    asyncio.run_coroutine_threadsafe(
+        application.process_update(update),
+        event_loop
+    )
 
     return {"ok": True}
 
@@ -122,13 +127,16 @@ def webhook():
 def home():
     return "<h3>🤖 Bot Telegram đã triển khai thành công trên Render!</h3>"
 
-# === Chạy Flask và bot song song ===
+# === Khởi động bot và Flask song song ===
 if __name__ == "__main__":
     def run_flask():
         port = int(os.environ.get("PORT", 10000))
         app.run(host="0.0.0.0", port=port)
 
     async def main():
+        global event_loop
+        event_loop = asyncio.get_event_loop()
+
         print(f"🌐 WEBHOOK_URL: {WEBHOOK_URL}")
         await application.bot.delete_webhook()
         await application.bot.set_webhook(WEBHOOK_URL)
