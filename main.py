@@ -141,7 +141,7 @@ async def import_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["/menu", "/chuc_nang"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text("👋 Chào bạn! Dùng /menu hoặc /chuc_nang để xem chức năng.", reply_markup=reply_markup)
+    await update.message.reply_text("👋 Chào bạn! Dùng /menu để xem chức năng.", reply_markup=reply_markup)
 
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏓 Bot đang hoạt động bình thường.")
@@ -226,6 +226,17 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     append_to_csv(data)
     await update.message.reply_html(
         f"📄 <b>Tên file:</b> {file_name}\n📦 <b>Dung lượng:</b> {size_text}\n⏰ <b>Thời gian:</b> {time_str}\n🆔 <code>{msg_id}</code>"
+    )
+    
+async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📋 <b>Menu lệnh chính:</b>\n\n"
+        "🟢 <b>Cơ bản:</b>\n"
+        "/start – Bắt đầu bot\n"
+        "/ping – Kiểm tra bot\n"
+        "/help – Hướng dẫn sử dụng\n"
+        "/chuc_nang – Xem chức năng nâng cao"
+        , parse_mode="HTML"
     )
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
