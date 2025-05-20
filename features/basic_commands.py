@@ -4,6 +4,7 @@ from telegram.ext import ContextTypes
 from features.file_list import list_files
 from features.import_export import export_csv, import_csv
 from features.chon_ngay import chon_ngay
+from features.loc_dungluong import loc_dungluong_menu  # ✅ Thêm dòng này
 
 
 # === Gửi menu chính qua nút ===
@@ -27,7 +28,6 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard,
             parse_mode="HTML"
         )
-
 
 
 # === Callback xử lý tất cả menu ===
@@ -55,7 +55,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "cmd_list":
         await list_files(update, context)
     elif query.data == "cmd_filter_size":
-        await query.message.reply_text("📏 Nhập dung lượng cần lọc, ví dụ: <code>0.5 5</code> (MB)", parse_mode="HTML")
+        await loc_dungluong_menu(update, context)  # ✅ Gọi hàm thực tế
     elif query.data == "cmd_export":
         await export_csv(update, context)
     elif query.data == "cmd_import":
@@ -108,4 +108,3 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
-
