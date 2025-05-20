@@ -34,7 +34,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # === Quay lại menu chính ===
     if query.data == "menu_main":
         await menu(update, context)
         return
@@ -66,7 +65,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "loc_khoang":
         await query.message.reply_text(
-            "🔢 Nhập khoảng dung lượng, ví dụ:\n<code>100KB 500MB</code>",
+            "🔢 Nhập khoảng dung lượng cần lọc, ví dụ:\n<code>100KB 500MB</code>",
             parse_mode="HTML"
         )
 
@@ -89,6 +88,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔙 Quay lại menu", callback_data="menu_main")]
         ])
         await query.edit_message_text("📅 <b>Quản lý theo ngày:</b>", reply_markup=keyboard, parse_mode="HTML")
+
     elif query.data == "cmd_list_date":
         await query.message.reply_text("📅 Nhập ngày cần lọc (dd-mm-yyyy), ví dụ: <b>20-05-2025</b>", parse_mode="HTML")
     elif query.data == "cmd_chon_ngay":
@@ -105,6 +105,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔙 Quay lại menu", callback_data="menu_main")]
         ])
         await query.edit_message_text("🏷 <b>Gắn tag & lọc:</b>", reply_markup=keyboard, parse_mode="HTML")
+
     elif query.data == "cmd_addtag":
         await query.message.reply_text("➕ Gửi nội dung: <code>ID TAG</code> (ví dụ: <b>123 học_tập</b>)", parse_mode="HTML")
     elif query.data == "cmd_tag":
@@ -116,7 +117,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "cmd_renametag":
         await query.message.reply_text("✏️ Gửi: <code>tag_cũ tag_mới</code> để đổi tên", parse_mode="HTML")
 
-    # === Hướng dẫn ===
     elif query.data == "menu_help":
         await query.edit_message_text(
             "📚 <b>Hướng dẫn:</b>\n"
