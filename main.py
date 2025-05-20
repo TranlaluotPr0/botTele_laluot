@@ -8,6 +8,12 @@ from telegram.ext import (
     ApplicationBuilder, Application,
     MessageHandler, CallbackQueryHandler, ContextTypes, filters
 )
+from features.loc_dungluong import (
+    loc_dungluong_menu, handle_dungluong_text,
+    set_received_files as set_file_luong,
+    get_waiting_set as get_waiting_luong_set
+)
+
 
 # Import các chức năng đã tách
 from features.basic_commands import menu, menu_callback
