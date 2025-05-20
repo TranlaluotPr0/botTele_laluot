@@ -14,7 +14,6 @@ def set_received_files(data):
     global received_files
     received_files = data
 
-
 # === Hàm chuyển đơn vị sang MB ===
 def convert_to_mb(value_str):
     pattern = r"([\d.]+)\s*(KB|MB|GB)?"
@@ -32,17 +31,17 @@ def convert_to_mb(value_str):
     return value  # Mặc định là MB
 
 
+# === Gợi ý nhập lọc dung lượng ===
 async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     waiting_dungluong.add(user_id)
 
-   message = (
-    "📏 Nhập khoảng dung lượng cần lọc.\n"
-    "• Ví dụ: <code>100KB 10MB</code>\n"
-    "• Hoặc: <code>&gt;10MB</code> / <code>&lt;2GB</code>\n"
-    "• Mặc định đơn vị là MB nếu không ghi rõ."
-)
-
+    message = (
+        "📏 Nhập khoảng dung lượng cần lọc.\n"
+        "• Ví dụ: <code>100KB 10MB</code>\n"
+        "• Hoặc: <code>&gt;10MB</code> / <code>&lt;2GB</code>\n"
+        "• Mặc định đơn vị là MB nếu không ghi rõ."
+    )
 
     if update.callback_query:
         await update.callback_query.message.reply_text(message, parse_mode="HTML")
@@ -50,6 +49,7 @@ async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(message, parse_mode="HTML")
 
 
+# === Xử lý đầu vào lọc dung lượng
 async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
@@ -58,7 +58,7 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             files = received_files
 
-            # === Trường hợp toán tử đơn: >10MB hoặc <2GB
+            # === Trường hợp toán tử > / <
             if text.startswith(">") or text.startswith("<"):
                 op = text[0]
                 value = convert_to_mb(text[1:])
@@ -73,7 +73,7 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
                         if int(f['size']) / 1024 / 1024 < value
                     ]
             else:
-                # === Trường hợp khoảng: 100KB 10MB
+                # === Trường hợp khoảng: 2 giá trị
                 parts = text.split()
                 if len(parts) != 2:
                     raise ValueError("Cần nhập 2 giá trị hoặc dùng > / <")
