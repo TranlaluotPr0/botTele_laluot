@@ -8,12 +8,6 @@ from telegram.ext import (
     ApplicationBuilder, Application,
     MessageHandler, CallbackQueryHandler, ContextTypes, filters
 )
-from features.loc_dungluong import (
-    loc_dungluong_menu, handle_dungluong_text,
-    set_received_files as set_file_luong,
-    get_waiting_set as get_waiting_luong_set
-)
-
 
 # Import các chức năng đã tách
 from features.basic_commands import menu, menu_callback
@@ -22,6 +16,11 @@ from features.tags import add_tag, filter_by_tag, remove_tag, clear_tags, rename
 from features.file_list import list_files_by_date, filter_by_size
 from features.import_export import export_csv, import_csv, get_waiting_import_set
 from features.file_handlers import handle_received_file, load_from_csv, append_to_csv
+from features.loc_dungluong import (
+    loc_dungluong_menu, handle_dungluong_text,
+    set_received_files as set_file_luong,
+    get_waiting_set as get_waiting_luong_set
+)
 
 # === Biến toàn cục ===
 event_loop = None
@@ -40,6 +39,7 @@ app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 load_from_csv(received_files)
 application.bot_data["received_files"] = received_files
+set_file_luong(received_files)  # 🔍 Cho loc_dungluong
 
 # === Xử lý file nhận ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,6 +52,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         received_files.clear()
         load_from_csv(received_files)
         application.bot_data["received_files"] = received_files
+        set_file_luong(received_files)  # Cập nhật cho module lọc dung lượng
         waiting_import.remove(user_id)
         await update.message.reply_text(f"✅ Đã nhập {len(received_files)} file từ log.csv.")
         return
@@ -78,14 +79,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <code>{data['id']}</code>"
     )
 
-# === Đăng ký handlers (menu callback + nhập tay) ===
+# === Đăng ký handlers ===
 application.add_handler(MessageHandler(filters.COMMAND, menu))  # fallback /menu
 application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd)_"))
 
 application.add_handler(CallbackQueryHandler(handle_ngay_callback))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ngay_text))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+
+# Xử lý TEXT theo từng trạng thái người dùng
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id in get_waiting_luong_set():
+        await handle_dungluong_text(update, context)
+    else:
+        await handle_ngay_text(update, context)
+
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
 # === Webhook ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
