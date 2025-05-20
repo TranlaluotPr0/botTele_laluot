@@ -38,9 +38,9 @@ WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 
 # === Flask và Telegram ===
 app = Flask(__name__)
-application = ApplicationBuilder().token(BOT_TOKEN).build()
+cation = cationBuilder().token(BOT_TOKEN).build()
 load_from_csv(received_files)
-application.bot_data["received_files"] = received_files
+cation.bot_data["received_files"] = received_files
 set_file_luong(received_files)  # 🔍 Cho loc_dungluong
 
 # === Xử lý file nhận ===
@@ -53,7 +53,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await file.download_to_drive("log.csv")
         received_files.clear()
         load_from_csv(received_files)
-        application.bot_data["received_files"] = received_files
+        cation.bot_data["received_files"] = received_files
         set_file_luong(received_files)  # Cập nhật cho module lọc dung lượng
         waiting_import.remove(user_id)
         await update.message.reply_text(f"✅ Đã nhập {len(received_files)} file từ log.csv.")
@@ -82,7 +82,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # === Đăng ký handlers ===
-application.add_handler(MessageHandler(filters.COMMAND, menu))  # fallback /menu
+
 application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd)_"))
 
 application.add_handler(CallbackQueryHandler(handle_ngay_callback))
