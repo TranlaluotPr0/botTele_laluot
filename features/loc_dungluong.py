@@ -36,12 +36,13 @@ async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_id = update.effective_user.id
     waiting_dungluong.add(user_id)
 
-    message = (
-        "📏 Nhập khoảng dung lượng cần lọc.\n"
-        "• Ví dụ: <code>100KB 10MB</code>\n"
-        "• Hoặc: <code>>10MB</code> / <code><2GB</code>\n"
-        "• Mặc định đơn vị là MB nếu không ghi rõ."
-    )
+   message = (
+    "📏 Nhập khoảng dung lượng cần lọc.\n"
+    "• Ví dụ: <code>100KB 10MB</code>\n"
+    "• Hoặc: <code>&gt;10MB</code> / <code>&lt;2GB</code>\n"
+    "• Mặc định đơn vị là MB nếu không ghi rõ."
+)
+
 
     if update.callback_query:
         await update.callback_query.message.reply_text(message, parse_mode="HTML")
