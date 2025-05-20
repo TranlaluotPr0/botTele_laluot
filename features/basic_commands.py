@@ -108,3 +108,18 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
+
+
+
+# === Các lệnh cơ bản: /start, /ping, /menu ===
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Xin chào! Tôi là bot quản lý file.\nDùng /menu hoặc nhấn nút bên dưới để bắt đầu.")
+    await menu(update, context)
+
+async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🏓 Pong! Bot đang hoạt động bình thường.")
+
+async def fallback_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await menu(update, context)
+
