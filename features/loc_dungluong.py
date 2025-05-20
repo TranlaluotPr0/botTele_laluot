@@ -40,17 +40,27 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in waiting_dungluong:
         try:
             min_mb, max_mb = map(float, text.split())
+
             matched = [
-                f"📄 <b>{f['name']}</b>\n📦 {round(f['size'] / 1024 / 1024, 2)} MB\n🆔 <code>{f['id']}</code>"
+                f"📄 <b>{f['name']}</b>\n"
+                f"📦 {round(int(f['size']) / 1024 / 1024, 2)} MB\n"
+                f"🆔 <code>{f['id']}</code>"
                 for f in received_files
-                if min_mb <= f['size'] / 1024 / 1024 <= max_mb
+                if min_mb <= int(f['size']) / 1024 / 1024 <= max_mb
             ]
 
             if matched:
-                await update.message.reply_html("🔎 Kết quả tìm thấy:\n\n" + "\n\n".join(matched))
+                await update.message.reply_html(
+                    "🔎 Kết quả tìm thấy:\n\n" + "\n\n".join(matched)
+                )
             else:
-                await update.message.reply_text("❌ Không tìm thấy file nào trong khoảng dung lượng.")
+                await update.message.reply_text(
+                    "❌ Không tìm thấy file nào trong khoảng dung lượng."
+                )
+
         except ValueError:
-            await update.message.reply_text("⚠️ Sai định dạng. Nhập đúng như: 0.5 5")
+            await update.message.reply_text(
+                "⚠️ Sai định dạng. Nhập đúng như: 0.5 5"
+            )
 
         waiting_dungluong.discard(user_id)
