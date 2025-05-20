@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 # Import các chức năng đã tách
-from features.basic_commands import start, ping, help_command, menu
+from features.basic_commands import start, ping, help_command, menu, menu_callback
 from features.tags import add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag
 from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
 from features.file_list import list_files, list_files_by_date, filter_by_size
@@ -97,6 +97,7 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ngay_text))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
 
 # === Thiết lập menu lệnh Telegram ===
 async def set_bot_commands(app: Application):
