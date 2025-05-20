@@ -9,7 +9,7 @@ from telegram.ext import (
     MessageHandler, CallbackQueryHandler, ContextTypes, filters
 )
 
-# Import các chức năng đã tách
+# === Import các chức năng đã tách ===
 from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
 from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
 from features.tags import add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag
@@ -23,7 +23,6 @@ from features.loc_dungluong_debug import (
     get_waiting_set as get_waiting_luong_set
 )
 
-
 # === Biến toàn cục ===
 event_loop = None
 received_files = []
@@ -36,14 +35,15 @@ WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 
-# === Flask và Telegram ===
+# === Flask và khởi tạo Telegram Application ===
 app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
-load_from_csv(received_files)
-cation.bot_data["received_files"] = received_files
-set_file_luong(received_files)  # 🔍 Cho loc_dungluong
 
-# === Xử lý file nhận ===
+load_from_csv(received_files)
+application.bot_data["received_files"] = received_files
+set_file_luong(received_files)  # Cho module lọc dung lượng
+
+# === Xử lý file nhận được ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     user_id = update.effective_user.id
@@ -53,8 +53,8 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await file.download_to_drive("log.csv")
         received_files.clear()
         load_from_csv(received_files)
-        cation.bot_data["received_files"] = received_files
-        set_file_luong(received_files)  # Cập nhật cho module lọc dung lượng
+        application.bot_data["received_files"] = received_files
+        set_file_luong(received_files)
         waiting_import.remove(user_id)
         await update.message.reply_text(f"✅ Đã nhập {len(received_files)} file từ log.csv.")
         return
@@ -81,19 +81,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 <code>{data['id']}</code>"
     )
 
-# === Đăng ký handlers ===
-
-application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd)_"))
-
-application.add_handler(CallbackQueryHandler(handle_ngay_callback))
-application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
-application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-
-application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
-application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
-application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
-
-# Xử lý TEXT theo từng trạng thái người dùng
+# === Xử lý tin nhắn văn bản (lọc dung lượng hoặc ngày) ===
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in get_waiting_luong_set():
@@ -101,9 +89,19 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await handle_ngay_text(update, context)
 
+# === Đăng ký handlers ===
+application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
+application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
+application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
+
+application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd)_"))
+application.add_handler(CallbackQueryHandler(handle_ngay_callback))
+
+application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
+application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-# === Webhook ===
+# === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
@@ -111,9 +109,10 @@ def webhook():
     return {"ok": True}
 
 @app.route("/")
-def home(): return "<h3>🤖 Bot Telegram đang hoạt động!</h3>"
+def home():
+    return "<h3>🤖 Bot Telegram đang hoạt động!</h3>"
 
-# === Khởi động bot + Flask ===
+# === Khởi động bot và Flask song song ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
@@ -128,7 +127,3 @@ if __name__ == "__main__":
 
     threading.Thread(target=run_flask).start()
     asyncio.run(main())
-
-
-
-
