@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 # Import các chức năng đã tách
-from features.basic_commands import menu, menu_callback
+from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
 from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
 from features.tags import add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag
 from features.file_list import list_files_by_date, filter_by_size
@@ -89,6 +89,10 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
+application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
+application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
+application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
+
 # Xử lý TEXT theo từng trạng thái người dùng
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -124,3 +128,7 @@ if __name__ == "__main__":
 
     threading.Thread(target=run_flask).start()
     asyncio.run(main())
+
+
+
+
