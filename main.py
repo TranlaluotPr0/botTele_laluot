@@ -16,11 +16,13 @@ from features.tags import add_tag, filter_by_tag, remove_tag, clear_tags, rename
 from features.file_list import list_files_by_date, filter_by_size
 from features.import_export import export_csv, import_csv, get_waiting_import_set
 from features.file_handlers import handle_received_file, load_from_csv, append_to_csv
-from features.loc_dungluong import (
-    loc_dungluong_menu, handle_dungluong_text,
-    set_received_files as set_file_luong,
-    get_waiting_set as get_waiting_luong_set
+from features.loc_dungluong_debug import (
+    loc_dungluong_menu,
+    handle_dungluong_text,
+    set_received_files,
+    get_waiting_set
 )
+
 
 # === Biến toàn cục ===
 event_loop = None
