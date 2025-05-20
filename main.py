@@ -38,7 +38,7 @@ WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 
 # === Flask và Telegram ===
 app = Flask(__name__)
-cation = cationBuilder().token(BOT_TOKEN).build()
+application = ApplicationBuilder().token(BOT_TOKEN).build()
 load_from_csv(received_files)
 cation.bot_data["received_files"] = received_files
 set_file_luong(received_files)  # 🔍 Cho loc_dungluong
