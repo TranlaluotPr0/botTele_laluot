@@ -58,9 +58,12 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
                     "❌ Không tìm thấy file nào trong khoảng dung lượng."
                 )
 
+            waiting_dungluong.discard(user_id)
+
         except ValueError:
             await update.message.reply_text(
                 "⚠️ Sai định dạng. Nhập đúng như: 0.5 5"
             )
+            # ❌ Không discard user khỏi danh sách chờ
+            return
 
-        waiting_dungluong.discard(user_id)
