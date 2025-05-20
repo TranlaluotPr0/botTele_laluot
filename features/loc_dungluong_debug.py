@@ -61,10 +61,11 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
                     f for f in files
                     if (int(f['size']) / 1024 / 1024 > value if op == ">" else int(f['size']) / 1024 / 1024 < value)
                 ]
+
             else:
                 parts = text.split()
                 if len(parts) != 2:
-                    raise ValueError("Cần nhập 2 giá trị hoặc dùng > / <")
+                    raise ValueError("Cần nhập đúng định dạng: 2 giá trị hoặc >x")
 
                 min_mb = convert_to_mb(parts[0])
                 max_mb = convert_to_mb(parts[1])
@@ -85,10 +86,10 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
             else:
                 await update.message.reply_text("❌ Không tìm thấy file nào phù hợp.")
 
+            # ✅ Chỉ khi thành công mới xóa user khỏi danh sách chờ
+            waiting_dungluong.discard(user_id)
+
         except Exception as e:
             print("❌ Lỗi khi lọc dung lượng:", e)
             traceback.print_exc()
             await update.message.reply_text("⚠️ Sai định dạng. Ví dụ: 100KB 10MB hoặc >1GB")
-
-        finally:
-            waiting_dungluong.discard(user_id)
