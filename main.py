@@ -15,7 +15,7 @@ from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
 from features.file_list import list_files, list_files_by_date, filter_by_size
 from features.import_export import export_csv, import_csv, get_waiting_import_set
 from features.file_handlers import handle_received_file, load_from_csv, append_to_csv
-from features.basic_commands import start, ping, help_command, menu, menu_callback
+from features.basic_commands import menu, menu_callback
 from telegram.ext import CallbackQueryHandler
 
 # === Biến toàn cục ===
@@ -98,6 +98,7 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ngay_text))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+application.add_handler(MessageHandler(filters.COMMAND, menu))  # dùng /menu khởi động
 application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_|^cmd_"))
 
 # === Thiết lập menu lệnh Telegram ===
