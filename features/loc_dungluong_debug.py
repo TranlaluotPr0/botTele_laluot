@@ -14,6 +14,7 @@ def set_received_files(data):
     received_files = data
 
 def convert_to_mb(value_str):
+    print(f"[DEBUG] Chuỗi nhận vào: {repr(value_str)}")
     pattern = r"^([\d.]+)\s*(KB|MB|GB)?$"
     match = re.fullmatch(pattern, value_str.strip().upper())
     if not match:
@@ -27,7 +28,6 @@ def convert_to_mb(value_str):
     elif unit == "GB":
         return value * 1024
     return value  # Mặc định MB
-
 
 async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -45,10 +45,9 @@ async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif update.message:
         await update.message.reply_text(message, parse_mode="HTML")
 
-
 async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    text = update.message.text.strip()
+    text = update.message.text.strip().upper()
 
     if user_id in waiting_dungluong:
         try:
@@ -94,6 +93,6 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
             waiting_dungluong.discard(user_id)
 
         except Exception as e:
-            print("❌ Lỗi khi xử lý lọc dung lượng:", e)
+            print("❌ Lỗi khi lọc dung lượng:", e)
             traceback.print_exc()
             await update.message.reply_text("⚠️ Sai định dạng. Ví dụ: 100KB 10MB hoặc >1GB")
