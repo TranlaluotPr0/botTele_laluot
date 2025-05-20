@@ -98,7 +98,7 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ngay_text))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
+application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_|^cmd_"))
 
 # === Thiết lập menu lệnh Telegram ===
 async def set_bot_commands(app: Application):
