@@ -4,7 +4,6 @@ from telegram.ext import ContextTypes
 from features.file_list import list_files
 from features.import_export import export_csv, import_csv
 from features.chon_ngay import chon_ngay
-from features.loc_dungluong import loc_dungluong_menu  # ✅ Thêm dòng này
 
 
 # === Gửi menu chính qua nút ===
@@ -54,8 +53,29 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "cmd_list":
         await list_files(update, context)
+
     elif query.data == "cmd_filter_size":
-        await loc_dungluong_menu(update, context)  # ✅ Gọi hàm thực tế
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("🔢 Lọc trong khoảng", callback_data="loc_khoang"),
+                InlineKeyboardButton("🔼 Lọc > hoặc <", callback_data="loc_toan_tu")
+            ],
+            [InlineKeyboardButton("🔙 Quay lại", callback_data="menu_file")]
+        ])
+        await query.edit_message_text("📏 Chọn cách lọc dung lượng:", reply_markup=keyboard)
+
+    elif query.data == "loc_khoang":
+        await query.message.reply_text(
+            "🔢 Nhập khoảng dung lượng, ví dụ:\n<code>100KB 500MB</code>",
+            parse_mode="HTML"
+        )
+
+    elif query.data == "loc_toan_tu":
+        await query.message.reply_text(
+            "🔼 Nhập điều kiện lọc, ví dụ:\n<code>&gt;100MB</code> hoặc <code>&lt;1GB</code>",
+            parse_mode="HTML"
+        )
+
     elif query.data == "cmd_export":
         await export_csv(update, context)
     elif query.data == "cmd_import":
@@ -110,7 +130,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
 
 
-
 # === Các lệnh cơ bản: /start, /ping, /menu ===
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -121,10 +140,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• Dùng lệnh /menu để truy cập các chức năng quản lý."
     )
 
-
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏓 Pong! Bot đang hoạt động bình thường.")
 
 async def fallback_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await menu(update, context)
-
