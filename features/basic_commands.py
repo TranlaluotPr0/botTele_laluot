@@ -22,7 +22,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # === Menu chính ===
+    # === Quay lại menu chính ===
     if query.data == "menu_main":
         await menu(update, context)
 
@@ -95,3 +95,4 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
+
