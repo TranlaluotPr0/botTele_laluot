@@ -114,8 +114,13 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # === Các lệnh cơ bản: /start, /ping, /menu ===
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Xin chào! Tôi là bot quản lý file.\nDùng /menu hoặc nhấn nút bên dưới để bắt đầu.")
-    await menu(update, context)
+    await update.message.reply_text(
+        "👋 Xin chào! Tôi là bot hỗ trợ quản lý file.\n"
+        "Bạn có thể:\n"
+        "• Gửi file tài liệu hoặc ảnh\n"
+        "• Dùng lệnh /menu để truy cập các chức năng quản lý."
+    )
+
 
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏓 Pong! Bot đang hoạt động bình thường.")
