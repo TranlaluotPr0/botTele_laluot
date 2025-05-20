@@ -1,17 +1,16 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 import re
 import traceback
 
 waiting_dungluong = set()
-received_files = []
 
 def get_waiting_set():
     return waiting_dungluong
 
 def set_received_files(data):
-    global received_files
-    received_files = data
+    # Không còn cần thiết nếu dùng context.application.bot_data
+    pass
 
 def convert_to_mb(value_str):
     print(f"[DEBUG] Chuỗi nhận vào: {repr(value_str)}")
@@ -27,20 +26,25 @@ def convert_to_mb(value_str):
         return value * 1024
     return value  # Mặc định MB
 
+# Gọi khi người dùng bấm "📏 Lọc dung lượng"
 async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     waiting_dungluong.add(user_id)
-    message = (
-        "📏 Nhập khoảng dung lượng cần lọc.\n"
-        "• Ví dụ: <code>100KB 10MB</code>\n"
-        "• Hoặc: <code>&gt;10MB</code> / <code>&lt;2GB</code>\n"
-        "• Mặc định đơn vị là MB nếu không ghi rõ."
-    )
-    if update.callback_query:
-        await update.callback_query.message.reply_text(message, parse_mode="HTML")
-    elif update.message:
-        await update.message.reply_text(message, parse_mode="HTML")
 
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔢 Lọc trong khoảng", callback_data="loc_khoang"),
+            InlineKeyboardButton("🔼 Lọc > hoặc <", callback_data="loc_toan_tu")
+        ]
+    ])
+
+    message = "📏 Chọn cách lọc dung lượng:"
+    if update.callback_query:
+        await update.callback_query.message.reply_text(message, reply_markup=keyboard)
+    elif update.message:
+        await update.message.reply_text(message, reply_markup=keyboard)
+
+# Gọi khi người dùng nhập khoảng hoặc toán tử
 async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip().upper()
@@ -49,7 +53,7 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     try:
-        files = received_files
+        files = context.application.bot_data.get("received_files", [])
         print("[DEBUG] Tổng số file đã nạp:", len(files))
 
         if text.startswith(">") or text.startswith("<"):
@@ -86,4 +90,4 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         print("❌ Lỗi khi lọc dung lượng:", e)
         traceback.print_exc()
-        await update.message.reply_text("⚠️ Sai định dạng. Ví dụ: 100KB 10MB hoặc >1GB")
+        await update.message.reply_text("⚠️ Sai định dạng. Ví dụ: <code>100KB 1GB</code> hoặc <code>>500MB</code>", parse_mode="HTML")
