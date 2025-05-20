@@ -14,7 +14,20 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🏷 Gắn tag & lọc", callback_data="menu_tag")],
         [InlineKeyboardButton("📖 Hướng dẫn sử dụng", callback_data="menu_help")]
     ])
-    await update.message.reply_text("📋 <b>Menu lệnh chính:</b>", reply_markup=keyboard, parse_mode="HTML")
+
+    if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text="📋 <b>Menu lệnh chính:</b>",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+    elif update.message:
+        await update.message.reply_text(
+            "📋 <b>Menu lệnh chính:</b>",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+
 
 
 # === Callback xử lý tất cả menu ===
@@ -25,9 +38,10 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # === Quay lại menu chính ===
     if query.data == "menu_main":
         await menu(update, context)
+        return
 
     # === Quản lý file ===
-    elif query.data == "menu_file":
+    if query.data == "menu_file":
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("📄 Danh sách file", callback_data="cmd_list")],
             [InlineKeyboardButton("📏 Lọc dung lượng", callback_data="cmd_filter_size")],
@@ -36,8 +50,9 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔙 Quay lại menu", callback_data="menu_main")]
         ])
         await query.edit_message_text("📁 <b>Quản lý file:</b>", reply_markup=keyboard, parse_mode="HTML")
+        return
 
-    elif query.data == "cmd_list":
+    if query.data == "cmd_list":
         await list_files(update, context)
     elif query.data == "cmd_filter_size":
         await query.message.reply_text("📏 Nhập dung lượng cần lọc, ví dụ: <code>0.5 5</code> (MB)", parse_mode="HTML")
@@ -54,7 +69,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔙 Quay lại menu", callback_data="menu_main")]
         ])
         await query.edit_message_text("📅 <b>Quản lý theo ngày:</b>", reply_markup=keyboard, parse_mode="HTML")
-
     elif query.data == "cmd_list_date":
         await query.message.reply_text("📅 Nhập ngày cần lọc (dd-mm-yyyy), ví dụ: <b>20-05-2025</b>", parse_mode="HTML")
     elif query.data == "cmd_chon_ngay":
@@ -71,7 +85,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔙 Quay lại menu", callback_data="menu_main")]
         ])
         await query.edit_message_text("🏷 <b>Gắn tag & lọc:</b>", reply_markup=keyboard, parse_mode="HTML")
-
     elif query.data == "cmd_addtag":
         await query.message.reply_text("➕ Gửi nội dung: <code>ID TAG</code> (ví dụ: <b>123 học_tập</b>)", parse_mode="HTML")
     elif query.data == "cmd_tag":
