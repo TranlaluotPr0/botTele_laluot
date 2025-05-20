@@ -19,8 +19,8 @@ from features.file_handlers import handle_received_file, load_from_csv, append_t
 from features.loc_dungluong_debug import (
     loc_dungluong_menu,
     handle_dungluong_text,
-    set_received_files,
-    get_waiting_set
+    set_received_files as set_file_luong,
+    get_waiting_set as get_waiting_luong_set
 )
 
 
