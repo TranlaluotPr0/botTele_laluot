@@ -27,7 +27,7 @@ def convert_to_mb(value_str):
         return value / 1024
     elif unit == "GB":
         return value * 1024
-    return value  # Mặc định MB
+    return value  # Mặc định là MB
 
 async def loc_dungluong_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -52,20 +52,15 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in waiting_dungluong:
         try:
             files = received_files
+            print("[DEBUG] Tổng số file đã nạp:", len(files))
 
             if text.startswith(">") or text.startswith("<"):
                 op = text[0]
                 value = convert_to_mb(text[1:])
-                if op == ">":
-                    matched = [
-                        f for f in files
-                        if int(f['size']) / 1024 / 1024 > value
-                    ]
-                else:
-                    matched = [
-                        f for f in files
-                        if int(f['size']) / 1024 / 1024 < value
-                    ]
+                matched = [
+                    f for f in files
+                    if (int(f['size']) / 1024 / 1024 > value if op == ">" else int(f['size']) / 1024 / 1024 < value)
+                ]
             else:
                 parts = text.split()
                 if len(parts) != 2:
@@ -90,9 +85,10 @@ async def handle_dungluong_text(update: Update, context: ContextTypes.DEFAULT_TY
             else:
                 await update.message.reply_text("❌ Không tìm thấy file nào phù hợp.")
 
-            waiting_dungluong.discard(user_id)
-
         except Exception as e:
             print("❌ Lỗi khi lọc dung lượng:", e)
             traceback.print_exc()
             await update.message.reply_text("⚠️ Sai định dạng. Ví dụ: 100KB 10MB hoặc >1GB")
+
+        finally:
+            waiting_dungluong.discard(user_id)
