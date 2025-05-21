@@ -62,24 +62,15 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = handle_received_file(update.message, doc.file_id, doc.file_name, doc.file_size)
     received_files.append(data)
     append_to_csv(data)
-    await update.message.reply_html(
-        f"📄 <b>Tên file:</b> {data['name']}\n"
-        f"📦 <b>Dung lượng:</b> {data['size']}\n"
-        f"⏰ <b>Thời gian:</b> {data['time']}\n"
-        f"🆔 <code>{data['id']}</code>"
-    )
+    print(f"[📄] Đã nhận file: {data['name']} ({data['size']}) lúc {data['time']}")
+
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
     data = handle_received_file(update.message, photo.file_id, "Ảnh (không có tên)", photo.file_size)
     received_files.append(data)
     append_to_csv(data)
-    await update.message.reply_html(
-        f"🖼 <b>Ảnh nhận được</b>\n"
-        f"📦 <b>Dung lượng:</b> {data['size']}\n"
-        f"⏰ <b>Thời gian:</b> {data['time']}\n"
-        f"🆔 <code>{data['id']}</code>"
-    )
+    print(f"[🖼] Đã nhận ảnh ({data['size']}) lúc {data['time']}")
 
 # === Xử lý tin nhắn văn bản (lọc dung lượng hoặc ngày) ===
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
