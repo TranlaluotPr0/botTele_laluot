@@ -30,6 +30,13 @@ async def add_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await message.reply_text("❗ ID không hợp lệ.")
         return
 
+    # ✅ Kiểm tra file có tồn tại trong danh sách không
+    received_files = context.bot_data.get("received_files", [])
+    if not any(str(f["id"]) == file_id_str for f in received_files):
+        await message.reply_text("🚫 Không tìm thấy file với ID đã nhập.")
+        return
+
+    # ✅ Tiếp tục xử lý gắn tag
     tags_data = load_tags()
     tags = tags_data.get(file_id_str, [])
     if tag in tags:
@@ -41,6 +48,7 @@ async def add_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_tags(tags_data)
 
     await message.reply_text(f"✅ Đã gắn tag '{tag}' cho file ID {file_id_str}.")
+
 
 # === /removetag <id> <tag>
 async def remove_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
