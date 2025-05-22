@@ -4,7 +4,11 @@ from telegram.ext import ContextTypes
 from features.file_list import list_files
 from features.import_export import export_csv, import_csv
 from features.chon_ngay import chon_ngay
-from features.loc_dungluong import get_waiting_set  # ✅ để xử lý lọc dung lượng
+from features.loc_dungluong import get_waiting_set as get_waiting_luong_set
+from features.tags import (
+    add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag,
+    get_waiting_tag_action, set_waiting_tag_action
+)
 
 
 # === Gửi menu chính qua nút ===
@@ -30,7 +34,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-# === Callback xử lý menu ===
+# === Callback xử lý tất cả menu ===
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -65,14 +69,14 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("📏 Chọn cách lọc dung lượng:", reply_markup=keyboard)
 
     elif query.data == "loc_khoang":
-        get_waiting_set().add(query.from_user.id)  # ✅ đánh dấu người dùng cần lọc khoảng
+        get_waiting_luong_set().add(query.from_user.id)
         await query.message.reply_text(
             "🔢 Nhập khoảng dung lượng cần lọc, ví dụ:\n<code>100KB 500MB</code>",
             parse_mode="HTML"
         )
 
     elif query.data == "loc_toan_tu":
-        get_waiting_set().add(query.from_user.id)  # ✅ đánh dấu người dùng cần lọc > hoặc <
+        get_waiting_luong_set().add(query.from_user.id)
         await query.message.reply_text(
             "🔼 Nhập điều kiện lọc, ví dụ:\n<code>&gt;100MB</code> hoặc <code>&lt;1GB</code>",
             parse_mode="HTML"
@@ -110,14 +114,23 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🏷 <b>Gắn tag & lọc:</b>", reply_markup=keyboard, parse_mode="HTML")
 
     elif query.data == "cmd_addtag":
+        set_waiting_tag_action(query.from_user.id, "add")
         await query.message.reply_text("➕ Gửi nội dung: <code>ID TAG</code> (ví dụ: <b>123 học_tập</b>)", parse_mode="HTML")
+
     elif query.data == "cmd_tag":
+        set_waiting_tag_action(query.from_user.id, "filter")
         await query.message.reply_text("🔍 Gửi tên tag để lọc, ví dụ: <b>học_tập</b>", parse_mode="HTML")
+
     elif query.data == "cmd_removetag":
+        set_waiting_tag_action(query.from_user.id, "remove")
         await query.message.reply_text("❌ Gửi nội dung: <code>ID TAG</code> để gỡ", parse_mode="HTML")
+
     elif query.data == "cmd_cleartags":
+        set_waiting_tag_action(query.from_user.id, "clear")
         await query.message.reply_text("🧹 Gửi ID file cần xoá toàn bộ tag", parse_mode="HTML")
+
     elif query.data == "cmd_renametag":
+        set_waiting_tag_action(query.from_user.id, "rename")
         await query.message.reply_text("✏️ Gửi: <code>tag_cũ tag_mới</code> để đổi tên", parse_mode="HTML")
 
     elif query.data == "menu_help":
@@ -128,12 +141,11 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🧑‍💻 Bot đang được nâng cấp liên tục!",
             parse_mode="HTML"
         )
-
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
 
 
-# === Các lệnh cơ bản ===
+# === Các lệnh cơ bản: /start, /ping, /menu ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Xin chào! Tôi là bot hỗ trợ quản lý file.\n"
