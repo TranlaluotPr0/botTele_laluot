@@ -39,9 +39,10 @@ WEBHOOK_URL = f"{WEBHOOK_HOST.rstrip('/')}{WEBHOOK_PATH}"
 app = Flask(__name__)
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
+# Load file log.csv vào danh sách received_files
 load_from_csv(received_files)
 application.bot_data["received_files"] = received_files
-set_file_luong(received_files)  # Cho module lọc dung lượng
+set_file_luong(received_files)  # cho module lọc dung lượng
 
 # === Xử lý file nhận được ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -62,17 +63,32 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = handle_received_file(update.message, doc.file_id, doc.file_name, doc.file_size)
     received_files.append(data)
     append_to_csv(data)
-    print(f"[📄] Đã nhận file: {data['name']} ({data['size']}) lúc {data['time']}")
+    application.bot_data["received_files"] = received_files
+    set_file_luong(received_files)
 
+    await update.message.reply_html(
+        f"📄 <b>Tên file:</b> {data['name']}\n"
+        f"📦 <b>Dung lượng:</b> {data['size']}\n"
+        f"⏰ <b>Thời gian:</b> {data['time']}\n"
+        f"🆔 <code>{data['id']}</code>"
+    )
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
     data = handle_received_file(update.message, photo.file_id, "Ảnh (không có tên)", photo.file_size)
     received_files.append(data)
     append_to_csv(data)
-    print(f"[🖼] Đã nhận ảnh ({data['size']}) lúc {data['time']}")
+    application.bot_data["received_files"] = received_files
+    set_file_luong(received_files)
 
-# === Xử lý tin nhắn văn bản (lọc dung lượng hoặc ngày) ===
+    await update.message.reply_html(
+        f"🖼 <b>Ảnh nhận được</b>\n"
+        f"📦 <b>Dung lượng:</b> {data['size']}\n"
+        f"⏰ <b>Thời gian:</b> {data['time']}\n"
+        f"🆔 <code>{data['id']}</code>"
+    )
+
+# === Xử lý tin nhắn văn bản ===
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in get_waiting_luong_set():
@@ -85,7 +101,7 @@ application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
 application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
 application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
 
-application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd)_"))
+application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd|loc)_"))
 application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
@@ -103,7 +119,7 @@ def webhook():
 def home():
     return "<h3>🤖 Bot Telegram đang hoạt động!</h3>"
 
-# === Khởi động bot và Flask song song ===
+# === Khởi động song song bot + Flask ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
