@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 from datetime import datetime
 
 # === Hiển thị nút + cho phép nhập ngày ===
@@ -69,6 +69,14 @@ async def handle_ngay_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "❌ Ngày không hợp lệ. Vui lòng nhập lại (ví dụ: 19/5 hoặc 18-05).\nNhập /exit để thoát."
     )
+
+# === Xử lý lệnh /exit từ bất kỳ trạng thái nào ===
+async def exit_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get("chon_ngay_mode"):
+        context.user_data["chon_ngay_mode"] = False
+        await update.message.reply_text("❎ Đã thoát khỏi chế độ chọn ngày.")
+    else:
+        await update.message.reply_text("⚠️ Hiện không ở chế độ chọn ngày.")
 
 # === Xử lý chung: gửi lại file theo ngày ===
 async def process_date(update: Update, context: ContextTypes.DEFAULT_TYPE, date_str: str, from_callback=False):
