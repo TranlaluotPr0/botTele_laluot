@@ -71,7 +71,7 @@ async def handle_ngay_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # === Xử lý lệnh /exit từ bất kỳ trạng thái nào ===
-async def exit_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def exit_day_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get("chon_ngay_mode"):
         context.user_data["chon_ngay_mode"] = False
         await update.message.reply_text("❎ Đã thoát khỏi chế độ chọn ngày.")
