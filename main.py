@@ -2,6 +2,7 @@ import os
 import asyncio
 import threading
 from dotenv import load_dotenv
+from telegram.ext import CommandHandler
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
