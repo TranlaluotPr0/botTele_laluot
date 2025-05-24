@@ -50,7 +50,7 @@ async def handle_ngay_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_input = update.message.text.strip().lower()
 
-    if user_input == "/exit":
+    if user_input == "/exit-day":
         context.user_data["chon_ngay_mode"] = False
         await update.message.reply_text("❎ Đã thoát khỏi chế độ chọn ngày.")
         return
@@ -67,7 +67,7 @@ async def handle_ngay_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             continue
 
     await update.message.reply_text(
-        "❌ Ngày không hợp lệ. Vui lòng nhập lại (ví dụ: 19/5 hoặc 18-05).\nNhập /exit để thoát."
+        "❌ Ngày không hợp lệ. Vui lòng nhập lại (ví dụ: 19/5 hoặc 18-05).\nNhập /exit-day để thoát."
     )
 
 # === Xử lý lệnh /exit từ bất kỳ trạng thái nào ===
