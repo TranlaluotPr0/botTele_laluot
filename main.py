@@ -11,7 +11,7 @@ from telegram.ext import (
 
 # === Import các chức năng đã tách ===
 from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
-from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text
+from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text, exit_day_command
 from features.tags import (
     add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag,
     handle_tag_input, get_waiting_tag_action
@@ -96,6 +96,7 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+application.add_handler(CommandHandler("exit-day", exit_day_command))
 
 # === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
