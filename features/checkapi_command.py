@@ -37,6 +37,6 @@ async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 # Chạy bot
-app = Application.builder().token("TELEGRAM_BOT_TOKEN").build()
+app = Application.builder().token("7370672219:AAEGlSpgVepH1GN3Zplm6pnFo3QnScxdbPA").build()
 app.add_handler(CommandHandler("check", check))
 app.run_polling()
