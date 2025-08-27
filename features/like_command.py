@@ -27,16 +27,16 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "region": region
         }
 
-        # Gọi API bất đồng bộ
+        # Gọi API bất đồng bộ (HTTP → ssl=False)
         async with aiohttp.ClientSession() as session:
-            async with session.get(API_URL, params=params) as resp:
+            async with session.get(API_URL, params=params, ssl=False) as resp:
                 if resp.status != 200:
                     await update.message.reply_text("❌ API không phản hồi, vui lòng thử lại sau.")
                     return
                 data = await resp.json()
 
-        # Kiểm tra dữ liệu
-        if data.get("status") == 1 or data.get("status") == 2:
+        # Format dữ liệu trả về
+        if data.get("status") in [1, 2]:
             msg = (
                 f"🔥 Kết quả Like:\n\n"
                 f"👤 Nickname: {data.get('PlayerNickname','N/A')}\n"
