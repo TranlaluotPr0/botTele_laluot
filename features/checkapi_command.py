@@ -1,28 +1,23 @@
-# features/checkapi_command.py
-import aiohttp
-from aiohttp import ClientConnectorError
-from telegram import Update
-from telegram.ext import ContextTypes
-import asyncio
+import requests
 
-API_URL = "http://103.149.253.241:2010/like"
-KEY = "conbo"
+API_URL = "https://searchaccountbyname-aya.vercel.app/search"
+KEY = "aya"
 
-async def checkapi_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        params = {"key": KEY, "uid": "447582027", "region": "sg"}  # test với UID mẫu
+def search_player(nickname, region="vn"):
+    url = f"{API_URL}?nickname={nickname}&key={KEY}&region={region}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        # chỉ lấy players, bỏ DEV & channel
+        return data.get("players", [])
+    else:
+        return None
 
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get(API_URL, params=params, ssl=False, timeout=5) as resp:
-                    if resp.status == 200:
-                        await update.message.reply_text("✅ API online và phản hồi OK!")
-                    else:
-                        await update.message.reply_text(f"⚠️ API phản hồi nhưng status {resp.status}")
-            except ClientConnectorError:
-                await update.message.reply_text("❌ Không kết nối được API (server offline hoặc chặn IP).")
-            except asyncio.TimeoutError:
-                await update.message.reply_text("⏰ API phản hồi quá lâu, có thể đang lag.")
 
-    except Exception as e:
-        await update.message.reply_text(f"❌ Lỗi khi check API: {str(e)}")
+players = search_player("conbobot")
+
+if players:
+    for p in players:
+        print(f"{p['nickname']} (Level {p['level']}) - Last login: {p['lastLogin']}")
+else:
+    print("❌ Không tìm thấy tài khoản")
