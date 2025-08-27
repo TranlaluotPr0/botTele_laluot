@@ -1,5 +1,6 @@
 # features/like_command.py
 import aiohttp
+from aiohttp import ClientConnectorError
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -29,11 +30,18 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Gọi API bất đồng bộ (HTTP → ssl=False)
         async with aiohttp.ClientSession() as session:
-            async with session.get(API_URL, params=params, ssl=False) as resp:
-                if resp.status != 200:
-                    await update.message.reply_text("❌ API không phản hồi, vui lòng thử lại sau.")
-                    return
-                data = await resp.json()
+            try:
+                async with session.get(API_URL, params=params, ssl=False, timeout=10) as resp:
+                    if resp.status != 200:
+                        await update.message.reply_text("❌ API không phản hồi, vui lòng thử lại sau.")
+                        return
+                    data = await resp.json()
+            except ClientConnectorError:
+                await update.message.reply_text("❌ Server API không online, vui lòng thử lại sau!")
+                return
+            except asyncio.TimeoutError:
+                await update.message.reply_text("⏰ API phản hồi quá lâu, vui lòng thử lại sau!")
+                return
 
         # Format dữ liệu trả về
         if data.get("status") in [1, 2]:
@@ -52,5 +60,5 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(msg)
 
-    except Exception as e:
-        await update.message.reply_text(f"❌ Lỗi: {str(e)}")
+    except Exception:
+        await update.message.reply_text("❌ Có lỗi xảy ra, vui lòng thử lại sau!")
