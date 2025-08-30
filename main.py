@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng đã tách ===
-from features.checkapi_command import checkapi_command
+
 from telegram.ext import CommandHandler
 from features.changebio_command import changebio_command
 from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
@@ -90,7 +90,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_ngay_text(update, context)
 
 # === Đăng ký các handlers ===
-application.add_handler(CommandHandler("checkapi", checkapi_command))
+
 application.add_handler(CommandHandler("changebio", changebio_command))
 application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
 application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
