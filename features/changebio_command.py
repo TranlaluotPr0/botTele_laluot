@@ -1,43 +1,25 @@
-# features/changebio_conversation.py
+# features/changebio_command.py
 import aiohttp
 import asyncio
 import json
 from aiohttp import ClientConnectorError
 from telegram import Update
-from telegram.ext import (
-    ContextTypes,
-    ConversationHandler,
-    CommandHandler,
-    MessageHandler,
-    filters
-)
+from telegram.ext import ContextTypes
 
 API_URL = "https://black-change-bio.vercel.app/get"
 
-# Các bước trong conversation
-ASK_JWT, ASK_BIO = range(2)
+async def changebio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Ghép các argument lại
+    if len(context.args) < 2:
+        await update.message.reply_text("⚠️ Dùng lệnh:\n`/changebio <jwt_token> <new_bio>`", parse_mode="Markdown")
+        return
 
-async def start_changebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🔑 Send your JWT token")
-    return ASK_JWT
-
-async def receive_jwt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    jwt_token = update.message.text
-    context.user_data["jwt"] = jwt_token
-
-    # Sau khi nhận JWT thì nhắc nhập bio mới
-    await update.message.reply_text("✏️ Now send me your new bio")
-
-    return ASK_BIO
-
-
-async def receive_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    bio_text = update.message.text.strip()
-    jwt_token = context.user_data.get("jwt_token")
+    jwt_token = context.args[0]
+    bio_text = " ".join(context.args[1:]).strip()
 
     if not bio_text:
-        await update.message.reply_text("⚠️ Bio trống, nhập lại:")
-        return ASK_BIO
+        await update.message.reply_text("⚠️ Bio trống, nhập lại cho chuẩn nha.")
+        return
 
     params = {
         "access": jwt_token,
@@ -50,7 +32,7 @@ async def receive_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 async with session.get(API_URL, params=params, timeout=10) as resp:
                     if resp.status != 200:
                         await update.message.reply_text(f"❌ API trả về HTTP {resp.status}")
-                        return ConversationHandler.END
+                        return
 
                     content_type = resp.headers.get("Content-Type", "")
                     if "application/json" in content_type.lower():
@@ -60,10 +42,10 @@ async def receive_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         data = {"raw": text}
             except ClientConnectorError:
                 await update.message.reply_text("❌ Không kết nối được API.")
-                return ConversationHandler.END
+                return
             except asyncio.TimeoutError:
                 await update.message.reply_text("⏰ API phản hồi quá lâu.")
-                return ConversationHandler.END
+                return
 
         # Format kết quả
         if isinstance(data, dict):
@@ -84,9 +66,3 @@ async def receive_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         await update.message.reply_text(f"❌ Có lỗi xảy ra: {e}")
-
-    return ConversationHandler.END
-
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Hủy đổi bio.")
-    return ConversationHandler.END
