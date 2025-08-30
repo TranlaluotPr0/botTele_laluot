@@ -105,6 +105,23 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_t
 application.add_handler(CommandHandler("exit_day", exit_day_command))
 
 # === Webhook Flask routes ===
+from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters
+from features.changebio_conversation import (
+    start_changebio, receive_jwt, receive_bio, cancel,
+    ASK_JWT, ASK_BIO
+)
+
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("changebio", start_changebio)],
+    states={
+        ASK_JWT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_jwt)],
+        ASK_BIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_bio)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+)
+
+application.add_handler(conv_handler)
+# === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
