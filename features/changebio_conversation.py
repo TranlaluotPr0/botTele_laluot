@@ -21,15 +21,15 @@ async def start_changebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔑 Send your JWT token")
     return ASK_JWT
 
-async def receive_jwt(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    jwt_token = update.message.text.strip()
-    if not jwt_token:
-        await update.message.reply_text("⚠️ Token không hợp lệ, nhập lại:")
-        return ASK_JWT
+async def receive_jwt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    jwt_token = update.message.text
+    context.user_data["jwt"] = jwt_token
 
-    context.user_data["jwt_token"] = jwt_token
-    await update.message.reply_text("✏️ Now send your new bio")
+    # Sau khi nhận JWT thì nhắc nhập bio mới
+    await update.message.reply_text("✏️ Now send me your new bio")
+
     return ASK_BIO
+
 
 async def receive_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bio_text = update.message.text.strip()
