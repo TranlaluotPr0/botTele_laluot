@@ -13,7 +13,7 @@ from telegram.ext import (
 # === Import các chức năng đã tách ===
 
 from telegram.ext import CommandHandler
-
+from features.changebio_command import changebio_command
 from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
 from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text, exit_day_command
 from features.tags import (
@@ -91,7 +91,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Đăng ký các handlers ===
 
-
+application.add_handler(CommandHandler("changebio", changebio_command))
 application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
 application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
 application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
@@ -106,21 +106,7 @@ application.add_handler(CommandHandler("exit_day", exit_day_command))
 
 # === Webhook Flask routes ===
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters
-from features.changebio_conversation import (
-    start_changebio, receive_jwt, receive_bio, cancel,
-    ASK_JWT, ASK_BIO
-)
 
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("changebio", start_changebio)],
-    states={
-        ASK_JWT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_jwt)],
-        ASK_BIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_bio)],
-    },
-    fallbacks=[CommandHandler("cancel", cancel)],
-)
-
-application.add_handler(conv_handler)
 # === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
