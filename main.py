@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng đã tách ===
-from features.sopam import sopam
+from features.sopam import sp_command
 from features.like_command import like_command
 from features.search_player import search_player_handler
 from telegram.ext import CommandHandler
