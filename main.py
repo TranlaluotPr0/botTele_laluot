@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng đã tách ===
-from features.sopam import sp_command
+from features.sp_command import sp_command
 from features.like_command import like_command
 from features.search_player import search_player_handler
 from telegram.ext import CommandHandler
@@ -93,7 +93,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Đăng ký các handlers ===
 
-application.add_handler(CommandHandler("sp", sopam))
+application.add_handler(CommandHandler("sp", sp_command))
 application.add_handler(CommandHandler("like", like_command))
 application.add_handler(search_player_handler)
 application.add_handler(CommandHandler("changebio", changebio_command))
