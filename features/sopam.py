@@ -9,10 +9,10 @@ API_URL = "http://160.30.21.71:5000/api/spam"
 async def sp_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Kiểm tra tham số đầu vào
     if len(context.args) != 2:
-        await update.message.reply_text("⚠️ Sử dụng lệnh: /sp <uid> <count>")
+        await update.message.reply_text("⚠️ Sử dụng lệnh: /sp <phone> <count>")
         return
     
-    uid = context.args[0]
+    phone = context.args[0]
     try:
         count = int(context.args[1])
         if count <= 0:
@@ -24,7 +24,7 @@ async def sp_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Tạo tham số cho API
     params = {
-        "uid": uid,
+        "phone": phone,
         "count": count
     }
 
