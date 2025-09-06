@@ -12,12 +12,13 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     uid = context.args[0]
-    region = context.args[1] if len(context.args) > 1 else "vn"  # mặc định VN
+    # Nếu không có region thì mặc định = vn
+    region = context.args[1].lower() if len(context.args) > 1 else "vn"
 
     params = {
         "uid": uid,
-        "region": region.lower(),
-        "key": "ScromnyiDev"  # key API bắt buộc
+        "region": region,
+        "key": "ScromnyiDev"  # key API
     }
 
     try:
@@ -28,13 +29,13 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return
                 data = await resp.json()
 
-        # Format response đẹp
+        # Format response
         reply = (
-            f"✅ Like Command Executed!\n\n"
+            f"✅ Like thành công!\n\n"
             f"👤 Nickname: {data.get('PlayerNickname', 'Unknown')}\n"
             f"🆔 UID: {data.get('UID')}\n"
             f"❤️ Likes trước: {data.get('LikesBeforeCommand')}\n"
-            f"➕ Likes cộng thêm: {data.get('LikesGivenByAPI')}\n"
+            f"➕ Likes thêm: {data.get('LikesGivenByAPI')}\n"
             f"📈 Likes sau: {data.get('LikesAfterCommand')}\n"
             f"🌍 Region: {region.upper()}\n"
             f"📊 Status: {data.get('status')}\n\n"
