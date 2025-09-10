@@ -7,10 +7,11 @@ API_KEY = "5341|xY8Se18unOkA09mFh9Fb6hE1MycuYA67RPnAQkKa376f110d"
 BASE_URL = "https://tempmail.id.vn/api"
 
 HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
     "Accept": "application/json",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {API_KEY}"  # KHÔNG có Bearer 2 lần
 }
+
 
 
 # 📧 Tạo email mới
