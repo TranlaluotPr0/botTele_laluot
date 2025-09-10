@@ -77,3 +77,23 @@ async def tempmail_read(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         await update.message.reply_text(f"⚠️ Lỗi khi đọc mail: {data}")
+# 🗑️ Xóa email theo ID
+async def tempmail_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("⚠️ Dùng: /tempmail_delete <mail_id>")
+        return
+
+    mail_id = context.args[0]
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Accept": "application/json"
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.delete(f"{BASE_URL}/email/{mail_id}", headers=headers) as resp:
+            data = await resp.json()
+
+    if "success" in data or resp.status == 200:
+        await update.message.reply_text(f"🗑️ Đã xóa email ID {mail_id} thành công.")
+    else:
+        await update.message.reply_text(f"⚠️ Lỗi khi xóa email {mail_id}: {data}")
