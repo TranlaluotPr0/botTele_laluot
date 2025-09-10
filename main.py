@@ -12,12 +12,7 @@ from telegram.ext import (
 
 # === Import các chức năng đã tách ===
 
-from features.tempmail_commands import (
-    tempmail_create,
-    tempmail_list,
-    tempmail_read,
-    tempmail_delete,
-)
+from features import tempmail_commands as tempmail
 from features.upgrade_group import upgrade_group_handler
 from features.sp_command import sp_command
 from features.like_command import like_command
@@ -101,10 +96,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Đăng ký các handlers ===
 
-application.add_handler(CommandHandler("tempmail_create", tempmail_create))
-application.add_handler(CommandHandler("tempmail_list", tempmail_list))
-application.add_handler(CommandHandler("tempmail_read", tempmail_read))
-application.add_handler(CommandHandler("tempmail_delete", tempmail_delete))
+application.add_handler(CommandHandler("tempmail_create", tempmail.tempmail_create))
+application.add_handler(CommandHandler("tempmail_list", tempmail.tempmail_list))
+application.add_handler(CommandHandler("tempmail_get", tempmail.tempmail_get))
+application.add_handler(CommandHandler("tempmail_messages", tempmail.tempmail_messages))
+application.add_handler(CommandHandler("tempmail_message", tempmail.tempmail_message))
+application.add_handler(CommandHandler("tempmail_delete", tempmail.tempmail_delete))
+application.add_handler(CommandHandler("tempmail_help", tempmail.tempmail_help))
 application.add_handler(upgrade_group_handler)
 application.add_handler(CommandHandler("sp", sp_command))
 application.add_handler(CommandHandler("like", like_command))
