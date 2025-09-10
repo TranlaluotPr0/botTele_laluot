@@ -18,7 +18,7 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     params = {
         "uid": uid,
         "region": region,
-        "key": "ScromnyiDev"  # key API
+        "key": "Scromnyi0606"  # key API
     }
 
     try:
