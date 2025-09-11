@@ -12,7 +12,7 @@ from telegram.ext import (
 
 # === Import các chức năng đã tách ===
 
-
+from features.likes_command import likes_command
 from features.additem_command import additem_command
 from features import tempmail_commands as tempmail
 from features.upgrade_group import upgrade_group_handler
@@ -97,6 +97,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_ngay_text(update, context)
 
 # === Đăng ký các handlers ===
+
+application.add_handler(CommandHandler("likes", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
 application.add_handler(CommandHandler("tempmail_create", tempmail.tempmail_create))
 application.add_handler(CommandHandler("tempmail_list", tempmail.tempmail_list))
