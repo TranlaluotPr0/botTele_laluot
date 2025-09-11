@@ -15,8 +15,8 @@ async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     region = context.args[1] if len(context.args) > 1 else "vn"
 
     params = {
-        "server_name": region,
-        "uid": uid
+        "uid": uid,
+        "region": region   # ✅ chuẩn theo response bạn test
     }
 
     try:
@@ -33,26 +33,28 @@ async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(f"📦 Raw response:\n{text}")
                     return
 
-        # Format kết quả đẹp hơn
-        likes_before = data.get("LikesBeforeCommand", "❓")
-        likes_after = data.get("LikesAfterCommand", "❓")
+        # Lấy dữ liệu từ JSON
+        likes_before = data.get("LikesbeforeCommand", "❓")
+        likes_after = data.get("LikesafterCommand", "❓")
         likes_given = data.get("LikesGivenByAPI", "❓")
         nickname = data.get("PlayerNickname", "Không rõ")
         status = data.get("status", "❓")
 
+        status_text = "✅ Thành công" if status == 1 else "❌ Thất bại"
+
         reply = (
-            f"✅ Kết quả Like\n"
-            f"👤 Người chơi: {nickname}\n"
-            f"🆔 UID: {uid}\n"
+            f"✨ *Kết quả Like*\n\n"
+            f"👤 Nickname: `{nickname}`\n"
+            f"🆔 UID: `{uid}`\n"
             f"🌍 Region: {region.upper()}\n\n"
             f"👍 Likes Trước: {likes_before}\n"
-            f"✨ Likes Sau: {likes_after}\n"
-            f"📥 Likes Cộng Thêm: {likes_given}\n\n"
-            f"📌 Status: {status}\n\n"
+            f"➕ Likes Được Cộng: {likes_given}\n"
+            f"✨ Likes Sau: {likes_after}\n\n"
+            f"📌 Trạng thái: {status_text}\n\n"
             f"🙏 Cảm ơn bạn đã sử dụng Bot của DatTranDev"
         )
 
-        await update.message.reply_text(reply)
+        await update.message.reply_text(reply, parse_mode="Markdown")
 
     except asyncio.TimeoutError:
         await update.message.reply_text("⏰ API phản hồi quá lâu.")
