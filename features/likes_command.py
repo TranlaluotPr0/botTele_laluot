@@ -3,7 +3,8 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-API_URL = "https://zx-gelmi-like.vercel.app/like"
+API_URL = "https://like-api-by-jobayar.vercel.app/like"
+API_KEY = "@JOBAYAR_AHMED"   # ✅ khóa cố định trong API
 
 # Lệnh /likes <uid> [region]
 async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -12,11 +13,12 @@ async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     uid = context.args[0]
-    region = context.args[1] if len(context.args) > 1 else "vn"
+    region = context.args[1] if len(context.args) > 1 else "vn"   # mặc định VN
 
     params = {
         "uid": uid,
-        "region": region   # ✅ chuẩn theo response bạn test
+        "server_name": region,   # ✅ API yêu cầu server_name
+        "key": API_KEY           # ✅ thêm key
     }
 
     try:
@@ -33,7 +35,7 @@ async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(f"📦 Raw response:\n{text}")
                     return
 
-        # Lấy dữ liệu từ JSON
+        # Lấy dữ liệu từ JSON (theo format bạn test trước đó)
         likes_before = data.get("LikesbeforeCommand", "❓")
         likes_after = data.get("LikesafterCommand", "❓")
         likes_given = data.get("LikesGivenByAPI", "❓")
@@ -46,7 +48,7 @@ async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"✨ *Kết quả Like*\n\n"
             f"👤 Nickname: `{nickname}`\n"
             f"🆔 UID: `{uid}`\n"
-            f"🌍 Region: {region.upper()}\n\n"
+            f"🌍 Server: {region.upper()}\n\n"
             f"👍 Likes Trước: {likes_before}\n"
             f"➕ Likes Được Cộng: {likes_given}\n"
             f"✨ Likes Sau: {likes_after}\n\n"
