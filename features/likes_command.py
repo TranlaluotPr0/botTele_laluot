@@ -3,19 +3,21 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-API_URL = "https://freefirev1.vercel.app/like"
-API_KEY = "FreeKey"  # Key cố định
+API_URL = "https://like-dev-xzza.vercel.app/like"
+API_KEY = "xza"   # ✅ Key cố định
 
-# Lệnh /likes <uid>
+# Lệnh /likes <uid> [region]
 async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
-        await update.message.reply_text("⚠️ Dùng lệnh: /likes <uid>")
+        await update.message.reply_text("⚠️ Dùng lệnh: /likes <uid> [region]")
         return
 
     uid = context.args[0]
+    region = context.args[1] if len(context.args) > 1 else "VN"   # mặc định VN
 
     params = {
         "uid": uid,
+        "server_name": region,
         "key": API_KEY
     }
 
@@ -34,33 +36,25 @@ async def likes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(f"📦 Raw response:\n{text}")
                     return
 
-        # Vì response là 1 list JSON, lấy phần tử thứ 2 (thông tin like)
-        if len(data) < 2:
-            await update.message.reply_text(f"⚠️ API không trả về dữ liệu hợp lệ:\n{data}")
-            return
+        # Parse JSON an toàn (tùy response)
+        likes_before = data.get("LikesbeforeCommand") or data.get("Likes Before Command", "❓")
+        likes_after = data.get("LikesafterCommand") or data.get("Likes after", "❓")
+        likes_given = data.get("LikesGivenByAPI") or data.get("Likes Added", "❓")
+        nickname = data.get("PlayerNickname") or data.get("Player Name", "Không rõ")
+        uid_resp = data.get("UID") or data.get("Player UID", uid)
+        status = data.get("status") or data.get("Status", "❓")
 
-        info = data[1]  # phần tử thứ 2 chứa thông tin like
-        key_info = data[0]  # phần tử đầu tiên chứa thông tin key
-
-        # Lấy dữ liệu
-        likes_before = info.get("Likes Before Command", "❓")
-        likes_after = info.get("Likes after", "❓")
-        likes_added = info.get("Likes Added", "❓")
-        nickname = info.get("Player Name", "Không rõ")
-        uid_resp = info.get("Player UID", uid)
-        status = info.get("Status", "❌")
+        status_text = "✅ Thành công" if str(status).lower() in ["1", "success", "true"] else "❌ Thất bại"
 
         reply = (
-            f"✨ *Kết quả Like (API V1)*\n\n"
+            f"✨ *Kết quả Like*\n\n"
             f"👤 Nickname: `{nickname}`\n"
-            f"🆔 UID: `{uid_resp}`\n\n"
+            f"🆔 UID: `{uid_resp}`\n"
+            f"🌍 Server: {region.upper()}\n\n"
             f"👍 Likes Trước: {likes_before}\n"
-            f"➕ Likes Được Cộng: {likes_added}\n"
+            f"➕ Likes Được Cộng: {likes_given}\n"
             f"✨ Likes Sau: {likes_after}\n\n"
-            f"📌 Trạng thái: {status}\n\n"
-            f"🔑 Key Expire: {key_info.get('key expire', '❓')}\n"
-            f"⏳ Remaining Limit: {key_info.get('remaining limit', '❓')}\n"
-            f"✅ Verify: {key_info.get('verify', '❓')}\n\n"
+            f"📌 Trạng thái: {status_text}\n\n"
             f"🙏 Cảm ơn bạn đã sử dụng Bot của DatTranDev"
         )
 
