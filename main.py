@@ -12,6 +12,7 @@ from telegram.ext import (
 
 # === Import các chức năng đã tách ===
 
+from features.zw_menu import zw_menu, handle_zw_callback, handle_zw_text, get_waiting_zw_set
 from features.likes_command import likes_command
 from features.additem_command import additem_command
 from features import tempmail_commands as tempmail
@@ -92,11 +93,15 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_dungluong_text(update, context)
     elif get_waiting_tag_action(user_id):
         await handle_tag_input(update, context)
+    elif user_id in get_waiting_zw_set():
+        await handle_zw_text(update, context)
     else:
         await handle_ngay_text(update, context)
 
+
 # === Đăng ký các handlers ===
 
+application.add_handler(CallbackQueryHandler(handle_zw_callback, pattern="^cmd_zw$"))
 application.add_handler(CommandHandler("likes", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
 application.add_handler(CommandHandler("tempmail_create", tempmail.tempmail_create))
