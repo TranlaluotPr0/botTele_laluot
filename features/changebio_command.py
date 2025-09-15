@@ -11,11 +11,15 @@ API_URL = "https://black-change-bio.vercel.app/get"
 async def changebio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Ghép các argument lại
     if len(context.args) < 2:
-        await update.message.reply_text("⚠️ Dùng lệnh:\n`/changebio <jwt_token> <new_bio>`", parse_mode="Markdown")
+        await update.message.reply_text("⚠️ Dùng lệnh:\n`/changebio <jwt_token> <new_bio>`\n\n"
+                                        "👉 Dùng `\\n` để xuống dòng.", parse_mode="Markdown")
         return
 
     jwt_token = context.args[0]
     bio_text = " ".join(context.args[1:]).strip()
+
+    # Thay \n thành xuống dòng thật
+    bio_text = bio_text.replace("\\n", "\n")
 
     if not bio_text:
         await update.message.reply_text("⚠️ Bio trống, nhập lại cho chuẩn nha.")
@@ -54,7 +58,7 @@ async def changebio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if ok or msg:
                 await update.message.reply_text(
-                    f"✅ Bio changed successfully!\n\n📝 New bio: {bio_text}\n"
+                    f"✅ Bio changed successfully!\n\n📝 New bio:\n{bio_text}\n"
                     f"{'ℹ️ ' + msg if msg else ''}"
                 )
             else:
