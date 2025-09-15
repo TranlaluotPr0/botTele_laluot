@@ -135,10 +135,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = (update.message.text or "").strip()
     if context.user_data.get("awaiting_zw"):
-        # Chèn ký tự zero width space U+200B (unicode đúng chuẩn)
-        zw_char = "\u200b"
+        zw_char = "\u2060"  # ký tự Word Joiner U+2060
         zw_text = zw_char.join(list(text))
-        await update.message.reply_text(f"✅ Kết quả:\n{zw_text}")
+        logger.info(f"user_id={user_id} text='{text}' len={len(text)} zw_text_len={len(zw_text)}")
+        await update.message.reply_text(zw_text)
         context.user_data.pop("awaiting_zw", None)
         return
 
