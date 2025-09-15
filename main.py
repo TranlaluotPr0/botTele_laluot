@@ -2,17 +2,16 @@ import os
 import asyncio
 import threading
 from dotenv import load_dotenv
-from telegram.ext import CommandHandler
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, Application,
-    MessageHandler, CallbackQueryHandler, ContextTypes, filters
+    MessageHandler, CallbackQueryHandler,
+    ContextTypes, filters, CommandHandler
 )
 
 # === Import các chức năng đã tách ===
-from telegram.ext import MessageHandler, filters
-from features.basic_commands import handle_message
+from features.basic_commands import handle_message, menu, menu_callback, start, ping, fallback_menu
 from features.zw_menu import zw_menu, handle_zw_callback, handle_zw_text, get_waiting_zw_set
 from features.likes_command import likes_command
 from features.additem_command import additem_command
@@ -20,19 +19,14 @@ from features import tempmail_commands as tempmail
 from features.upgrade_group import upgrade_group_handler
 from features.sp_command import sp_command
 from features.like_command import like_command
-from telegram.ext import CommandHandler
 from features.changebio_command import changebio_command
-from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
 from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text, exit_day_command
 from features.tags import (
-    add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag,
     handle_tag_input, get_waiting_tag_action
 )
-from features.file_list import list_files_by_date, filter_by_size
-from features.import_export import export_csv, import_csv, get_waiting_import_set
+from features.import_export import get_waiting_import_set
 from features.file_handlers import handle_received_file, load_from_csv, append_to_csv
 from features.loc_dungluong_debug import (
-    loc_dungluong_menu,
     handle_dungluong_text,
     set_received_files as set_file_luong,
     get_waiting_set as get_waiting_luong_set
@@ -87,35 +81,36 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     append_to_csv(data)
     print(f"[🖼] Đã nhận ảnh ({data['size']}) lúc {data['time']}")
 
-# === Xử lý tin nhắn văn bản ===
-
+# === Xử lý tin nhắn văn bản (gom tất cả vào đây) ===
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    print(f"[DEBUG] handle_text triggered, user={user_id}, waiting_zw={get_waiting_zw_set()}")
+    text = update.message.text.strip()
 
+    print(f"[DEBUG] User={user_id}, text='{text}'")
+
+    # Lọc dung lượng
     if user_id in get_waiting_luong_set():
         await handle_dungluong_text(update, context)
-    elif get_waiting_tag_action(user_id):
+        return
+
+    # Tag
+    if get_waiting_tag_action(user_id):
         await handle_tag_input(update, context)
-    elif user_id in get_waiting_zw_set():
-        print(f"[ZW] User {user_id} nhập: {update.message.text}")  # debug log
-        await handle_zw_text(update, context)
-    else:
-        await handle_ngay_text(update, context)
+        return
 
-
-
-# === Handler riêng cho ZW text ===
-async def zw_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    text = update.message.text
+    # ZW
     if user_id in get_waiting_zw_set():
         print(f"[ZW] User {user_id} nhập: {text}")
         await handle_zw_text(update, context)
+        return
+
+    # Ngày
+    await handle_ngay_text(update, context)
+
 # === Đăng ký các handlers ===
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, zw_text_router))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 application.add_handler(CallbackQueryHandler(handle_zw_callback, pattern="^cmd_zw$"))
+
 application.add_handler(CommandHandler("likes", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
 application.add_handler(CommandHandler("tempmail_create", tempmail.tempmail_create))
@@ -138,11 +133,7 @@ application.add_handler(CallbackQueryHandler(handle_ngay_callback))
 
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 application.add_handler(CommandHandler("exit_day", exit_day_command))
-
-# === Webhook Flask routes ===
-from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters
 
 # === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
