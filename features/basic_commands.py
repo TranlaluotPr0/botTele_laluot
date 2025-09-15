@@ -20,7 +20,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📁 Quản lý file", callback_data="menu_file")],
         [InlineKeyboardButton("📅 Quản lý theo ngày", callback_data="menu_date")],
-        [*zw_menu()],   # 👈 unpack list để thành một hàng nút
+        [InlineKeyboardButton("🌐 Chèn ký tự vô hình (ZW)", callback_data="menu_zw")],
     ])
 
     if update.callback_query:
@@ -90,6 +90,14 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "cmd_import":
         await import_csv(update, context)
 
+     # === ZW Menu ===
+    if query.data == "menu_zw":
+        waiting_zw.add(query.from_user.id)
+        await query.edit_message_text(
+            "✍️ Nhập chuỗi văn bản mà bạn muốn chèn **ký tự vô hình U+200B** vào giữa các ký tự.",
+            parse_mode="HTML"
+        )
+        return
     # === Quản lý theo ngày ===
     elif query.data == "menu_date":
         keyboard = InlineKeyboardMarkup([
@@ -147,6 +155,14 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
 
+# === Bắt tin nhắn để xử lý ZW ===
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id in waiting_zw:
+        text = update.message.text
+        # Chèn ký tự vô hình U+200B
+        result = "\u200b".join(list(text))
+        await update.message.reply_text(f"✅ Kết quả: {result}")
+        waiting_zw.remove(update.message.from_user.id)
 
 # === Các lệnh cơ bản: /start, /ping, /menu ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
