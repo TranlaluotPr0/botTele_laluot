@@ -87,17 +87,19 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"[🖼] Đã nhận ảnh ({data['size']}) lúc {data['time']}")
 
 # === Xử lý tin nhắn văn bản ===
-from features.zw_menu import handle_zw_text, get_waiting_zw_set
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in get_waiting_luong_set():
         await handle_dungluong_text(update, context)
     elif get_waiting_tag_action(user_id):
         await handle_tag_input(update, context)
-    elif user_id in get_waiting_zw_set():
+    elif user_id in get_waiting_zw_set():   # 👈 thêm nhánh này
+        print(f"[ZW] User {user_id} nhập: {update.message.text}")  # debug log
         await handle_zw_text(update, context)
     else:
         await handle_ngay_text(update, context)
+
 
 
 # === Đăng ký các handlers ===
