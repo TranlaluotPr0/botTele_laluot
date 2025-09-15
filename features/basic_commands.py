@@ -7,7 +7,7 @@ from features.tags import (
     add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag,
     get_waiting_tag_action, set_waiting_tag_action
 )
-
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 # logging để debug (Render show stdout)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📁 Quản lý file", callback_data="menu_file")],
         [InlineKeyboardButton("📅 Quản lý theo ngày", callback_data="menu_date")],
-        [InlineKeyboardButton("🌐 Chèn ký tự vô hình (ZW)", callback_data="cmd_zw")],  # sửa ở đây
+        [InlineKeyboardButton("🌐 Chèn ký tự vô hình (ZW)", callback_data="menu_zw")],  # để menu_zw
     ])
 
     if update.callback_query:
@@ -34,20 +34,12 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-# === Callback xử lý tất cả menu ===
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # Nếu bấm menu chính
-    if query.data == "menu_main":
-        await menu(update, context)
-        return
-
-    # === ZW Menu: bật cờ chờ input vào user_data ===
     if query.data == "menu_zw":
         context.user_data["awaiting_zw"] = True
-        logger.info("User %s set awaiting_zw=True", query.from_user.id)
         await query.edit_message_text(
             "✍️ Nhập chuỗi văn bản mà bạn muốn chèn <b>ký tự vô hình U+200B</b> vào giữa các ký tự.",
             parse_mode="HTML"
