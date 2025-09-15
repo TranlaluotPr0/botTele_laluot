@@ -128,16 +128,20 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Bắt tin nhắn để xử lý ZW (dùng context.user_data) ===
 
+import logging
+logger = logging.getLogger(__name__)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = (update.message.text or "").strip()
-
     if context.user_data.get("awaiting_zw"):
-        zw_text = "\u200b".join(list(text))
+        # Chèn ký tự zero width space U+200B (unicode đúng chuẩn)
+        zw_char = "\u200b"
+        zw_text = zw_char.join(list(text))
         await update.message.reply_text(f"✅ Kết quả:\n{zw_text}")
         context.user_data.pop("awaiting_zw", None)
         return
+
 
 
 # === Các lệnh cơ bản: /start, /ping, /menu ===
