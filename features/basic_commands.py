@@ -3,7 +3,6 @@ import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 
-from features.file_list import list_files
 from features.import_export import export_csv, import_csv
 from features.chon_ngay import chon_ngay
 from features.loc_dungluong import get_waiting_set as get_waiting_luong_set
@@ -71,8 +70,9 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("📁 <b>Quản lý file:</b>", reply_markup=keyboard, parse_mode="HTML")
         return
 
-    if query.data == "cmd_list":
-        await list_files(update, context)
+if query.data == "cmd_list":
+    await query.message.reply_text("📄 Tính năng danh sách file đã được tạm xoá.")
+
 
     elif query.data == "cmd_filter_size":
         keyboard = InlineKeyboardMarkup([
