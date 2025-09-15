@@ -5,37 +5,26 @@ from dotenv import load_dotenv
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
-    ApplicationBuilder, Application,
-    MessageHandler, CallbackQueryHandler,
+    ApplicationBuilder, MessageHandler, CallbackQueryHandler,
     ContextTypes, filters, CommandHandler
 )
 
-# === Import các chức năng đã tách ===
+# === Import các chức năng còn tồn tại ===
 from features.basic_commands import handle_message, menu, menu_callback, start, ping, fallback_menu
-from features.zw_menu import zw_menu, handle_zw_callback, handle_zw_text, get_waiting_zw_set
+from features.zw_menu import handle_zw_callback, handle_zw_text, get_waiting_zw_set
 from features.likes_command import likes_command
 from features.additem_command import additem_command
-from features import tempmail_commands as tempmail
-from features.upgrade_group import upgrade_group_handler
 from features.sp_command import sp_command
 from features.like_command import like_command
 from features.changebio_command import changebio_command
-from features.chon_ngay import chon_ngay, handle_ngay_callback, handle_ngay_text, exit_day_command
-from features.tags import (
-    handle_tag_input, get_waiting_tag_action
-)
-from features.import_export import get_waiting_import_set
+from features.tags import handle_tag_input, get_waiting_tag_action
 from features.file_handlers import handle_received_file, load_from_csv, append_to_csv
-from features.loc_dungluong_debug import (
-    handle_dungluong_text,
-    set_received_files as set_file_luong,
-    get_waiting_set as get_waiting_luong_set
-)
+from features import import_export
 
 # === Biến toàn cục ===
 event_loop = None
 received_files = []
-waiting_import = get_waiting_import_set()
+waiting_import = import_export.get_waiting_import_set()
 
 # === Load biến môi trường ===
 load_dotenv()
@@ -50,48 +39,42 @@ application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 load_from_csv(received_files)
 application.bot_data["received_files"] = received_files
-set_file_luong(received_files)  # Cho module lọc dung lượng
 
 # === Xử lý file nhận được ===
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
     user_id = update.effective_user.id
 
+    # Import log từ CSV
     if user_id in waiting_import and doc.file_name.endswith(".csv"):
         file = await doc.get_file()
         await file.download_to_drive("log.csv")
         received_files.clear()
         load_from_csv(received_files)
         application.bot_data["received_files"] = received_files
-        set_file_luong(received_files)
         waiting_import.remove(user_id)
         await update.message.reply_text(f"✅ Đã nhập {len(received_files)} file từ log.csv.")
         return
 
+    # File thường
     data = handle_received_file(update.message, doc.file_id, doc.file_name, doc.file_size)
     received_files.append(data)
     append_to_csv(data)
-    print(f"[📄] Đã nhận file: {data['name']} ({data['size']}) lúc {data['time']}")
+    print(f"[📄] Nhận file: {data['name']} ({data['size']})")
 
 # === Xử lý ảnh nhận được ===
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
-    data = handle_received_file(update.message, photo.file_id, "Ảnh (không có tên)", photo.file_size)
+    data = handle_received_file(update.message, photo.file_id, "Ảnh (no name)", photo.file_size)
     received_files.append(data)
     append_to_csv(data)
-    print(f"[🖼] Đã nhận ảnh ({data['size']}) lúc {data['time']}")
+    print(f"[🖼] Nhận ảnh ({data['size']})")
 
-# === Xử lý tin nhắn văn bản (gom tất cả vào đây) ===
+# === Xử lý tin nhắn văn bản ===
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
-
     print(f"[DEBUG] User={user_id}, text='{text}'")
-
-    # Lọc dung lượng
-    if user_id in get_waiting_luong_set():
-        await handle_dungluong_text(update, context)
-        return
 
     # Tag
     if get_waiting_tag_action(user_id):
@@ -104,36 +87,21 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_zw_text(update, context)
         return
 
-    # Ngày
-    await handle_ngay_text(update, context)
-
-# === Đăng ký các handlers ===
+# === Đăng ký handlers ===
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 application.add_handler(CallbackQueryHandler(handle_zw_callback, pattern="^cmd_zw$"))
 
 application.add_handler(CommandHandler("likes", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
-application.add_handler(CommandHandler("tempmail_create", tempmail.tempmail_create))
-application.add_handler(CommandHandler("tempmail_list", tempmail.tempmail_list))
-application.add_handler(CommandHandler("tempmail_get", tempmail.tempmail_get))
-application.add_handler(CommandHandler("tempmail_messages", tempmail.tempmail_messages))
-application.add_handler(CommandHandler("tempmail_message", tempmail.tempmail_message))
-application.add_handler(CommandHandler("tempmail_delete", tempmail.tempmail_delete))
-application.add_handler(CommandHandler("tempmail_help", tempmail.tempmail_help))
-application.add_handler(upgrade_group_handler)
 application.add_handler(CommandHandler("sp", sp_command))
 application.add_handler(CommandHandler("like", like_command))
 application.add_handler(CommandHandler("changebio", changebio_command))
 application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
 application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
 application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
-
 application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd|loc)_"))
-application.add_handler(CallbackQueryHandler(handle_ngay_callback))
-
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-application.add_handler(CommandHandler("exit_day", exit_day_command))
 
 # === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
@@ -144,9 +112,9 @@ def webhook():
 
 @app.route("/")
 def home():
-    return "<h3>🤖 Bot Telegram đang hoạt động!</h3>"
+    return "<h3>🤖 Bot Telegram đang chạy!</h3>"
 
-# === Khởi động bot và Flask song song ===
+# === Khởi động song song bot + Flask ===
 if __name__ == "__main__":
     def run_flask():
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
