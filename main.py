@@ -11,7 +11,8 @@ from telegram.ext import (
 )
 
 # === Import các chức năng đã tách ===
-
+from telegram.ext import MessageHandler, filters
+from features.basic_commands import handle_message
 from features.zw_menu import zw_menu, handle_zw_callback, handle_zw_text, get_waiting_zw_set
 from features.likes_command import likes_command
 from features.additem_command import additem_command
