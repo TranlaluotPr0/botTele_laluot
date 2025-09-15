@@ -14,7 +14,7 @@ from features.tags import (
     get_waiting_tag_action, set_waiting_tag_action
 )
 
-
+waiting_zw = set()
 # === Gửi menu chính qua nút ===
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
