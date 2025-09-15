@@ -87,6 +87,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"[🖼] Đã nhận ảnh ({data['size']}) lúc {data['time']}")
 
 # === Xử lý tin nhắn văn bản ===
+from features.zw_menu import handle_zw_text, get_waiting_zw_set
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in get_waiting_luong_set():
