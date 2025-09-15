@@ -4,7 +4,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 
 from features.import_export import export_csv, import_csv
-from features.chon_ngay import chon_ngay
+
 from features.loc_dungluong import get_waiting_set as get_waiting_luong_set
 from features.tags import (
     add_tag, filter_by_tag, remove_tag, clear_tags, rename_tag,
@@ -114,8 +114,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "cmd_list_date":
         await query.message.reply_text("📅 Nhập ngày cần lọc (dd-mm-yyyy), ví dụ: <b>20-05-2025</b>", parse_mode="HTML")
 
-    elif query.data == "cmd_chon_ngay":
-        await chon_ngay(update, context)
 
     # === Gắn tag & lọc ===
     elif query.data == "menu_tag":
