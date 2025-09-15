@@ -18,7 +18,6 @@ from features import tempmail_commands as tempmail
 from features.upgrade_group import upgrade_group_handler
 from features.sp_command import sp_command
 from features.like_command import like_command
-from features.search_player import search_player_handler
 from telegram.ext import CommandHandler
 from features.changebio_command import changebio_command
 from features.basic_commands import menu, menu_callback, start, ping, fallback_menu
@@ -110,7 +109,6 @@ application.add_handler(CommandHandler("tempmail_help", tempmail.tempmail_help))
 application.add_handler(upgrade_group_handler)
 application.add_handler(CommandHandler("sp", sp_command))
 application.add_handler(CommandHandler("like", like_command))
-application.add_handler(search_player_handler)
 application.add_handler(CommandHandler("changebio", changebio_command))
 application.add_handler(MessageHandler(filters.Regex("^/start$"), start))
 application.add_handler(MessageHandler(filters.Regex("^/ping$"), ping))
