@@ -17,7 +17,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📁 Quản lý file", callback_data="menu_file")],
         [InlineKeyboardButton("📅 Quản lý theo ngày", callback_data="menu_date")],
-        [InlineKeyboardButton("🌐 Chèn ký tự vô hình (ZW)", callback_data="menu_zw")],
+        [InlineKeyboardButton("🌐 Chèn ký tự vô hình (ZW)", callback_data="cmd_zw")],  # sửa ở đây
     ])
 
     if update.callback_query:
