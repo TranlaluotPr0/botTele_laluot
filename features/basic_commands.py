@@ -130,17 +130,12 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = (update.message.text or "").strip()
-    logger.info("handle_message triggered for user=%s text=%r awaiting=%s",
-                user_id, text, context.user_data.get("awaiting_zw"))
 
     if context.user_data.get("awaiting_zw"):
         zw_text = "\u200b".join(list(text))
         await update.message.reply_text(f"✅ Kết quả:\n{zw_text}")
-        logger.info("ZW result for user=%s: %r", user_id, zw_text)
         context.user_data.pop("awaiting_zw", None)
         return
-
-    return
 
 
 # === Các lệnh cơ bản: /start, /ping, /menu ===
