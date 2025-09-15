@@ -49,7 +49,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # === ZW Menu: bật cờ chờ input vào user_data ===
     if query.data == "menu_zw":
-        # dùng context.user_data để lưu trạng thái chờ input (an toàn, per-user)
         context.user_data["awaiting_zw"] = True
         logger.info("User %s set awaiting_zw=True", query.from_user.id)
         await query.edit_message_text(
@@ -70,9 +69,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("📁 <b>Quản lý file:</b>", reply_markup=keyboard, parse_mode="HTML")
         return
 
-if query.data == "cmd_list":
-    await query.message.reply_text("📄 Tính năng danh sách file đã được tạm xoá.")
-
+    elif query.data == "cmd_list":
+        await query.message.reply_text("📄 Tính năng danh sách file đã được tạm xoá.")
 
     elif query.data == "cmd_filter_size":
         keyboard = InlineKeyboardMarkup([
@@ -100,6 +98,7 @@ if query.data == "cmd_list":
 
     elif query.data == "cmd_export":
         await export_csv(update, context)
+
     elif query.data == "cmd_import":
         await import_csv(update, context)
 
@@ -114,6 +113,7 @@ if query.data == "cmd_list":
 
     elif query.data == "cmd_list_date":
         await query.message.reply_text("📅 Nhập ngày cần lọc (dd-mm-yyyy), ví dụ: <b>20-05-2025</b>", parse_mode="HTML")
+
     elif query.data == "cmd_chon_ngay":
         await chon_ngay(update, context)
 
@@ -157,28 +157,25 @@ if query.data == "cmd_list":
             "🧑‍💻 Bot đang được nâng cấp liên tục!",
             parse_mode="HTML"
         )
+
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
 
 
 # === Bắt tin nhắn để xử lý ZW (dùng context.user_data) ===
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # debug log để bạn thấy hoạt động trên Render
     user_id = update.effective_user.id
     text = (update.message.text or "").strip()
     logger.info("handle_message triggered for user=%s text=%r awaiting=%s",
                 user_id, text, context.user_data.get("awaiting_zw"))
 
-    # Nếu user đang chờ ZW thì xử lý, trả kết quả và gỡ cờ
     if context.user_data.get("awaiting_zw"):
         zw_text = "\u200b".join(list(text))
-        # trả cả repr để bạn có thể nhìn thấy ký tự vô hình trong logs nếu cần
         await update.message.reply_text(f"✅ Kết quả:\n{zw_text}")
         logger.info("ZW result for user=%s: %r", user_id, zw_text)
         context.user_data.pop("awaiting_zw", None)
         return
 
-    # Nếu không phải ZW, function này không làm gì nữa (các handler khác xử lý tiếp)
     return
 
 
