@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng còn tồn tại ===
-from features.basic_commands import handle_message, menu, menu_callback, start, ping, fallback_menu
+from features.basic_commands import handle_message, menu_callback, start, ping, fallback_menu
 from features.zw_menu import handle_zw_callback, handle_zw_text, get_waiting_zw_set
 from features.likes_command import likes_command
 from features.additem_command import additem_command
@@ -88,7 +88,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 # === Đăng ký handlers ===
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 application.add_handler(CallbackQueryHandler(handle_zw_callback, pattern="^cmd_zw$"))
 
 application.add_handler(CommandHandler("likes", likes_command))
