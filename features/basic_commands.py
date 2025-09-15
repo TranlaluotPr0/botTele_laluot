@@ -1,9 +1,7 @@
+# features/basic_commands.py
+import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
-
-
-from features.zw_menu import zw_menu, handle_zw_callback, handle_zw_text, get_waiting_zw_set
-
 
 from features.file_list import list_files
 from features.import_export import export_csv, import_csv
@@ -14,7 +12,10 @@ from features.tags import (
     get_waiting_tag_action, set_waiting_tag_action
 )
 
-waiting_zw = set()
+# logging để debug (Render show stdout)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # === Gửi menu chính qua nút ===
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
@@ -42,8 +43,20 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    # Nếu bấm menu chính
     if query.data == "menu_main":
         await menu(update, context)
+        return
+
+    # === ZW Menu: bật cờ chờ input vào user_data ===
+    if query.data == "menu_zw":
+        # dùng context.user_data để lưu trạng thái chờ input (an toàn, per-user)
+        context.user_data["awaiting_zw"] = True
+        logger.info("User %s set awaiting_zw=True", query.from_user.id)
+        await query.edit_message_text(
+            "✍️ Nhập chuỗi văn bản mà bạn muốn chèn <b>ký tự vô hình U+200B</b> vào giữa các ký tự.",
+            parse_mode="HTML"
+        )
         return
 
     # === Quản lý file ===
@@ -90,14 +103,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "cmd_import":
         await import_csv(update, context)
 
-     # === ZW Menu ===
-    if query.data == "menu_zw":
-        waiting_zw.add(query.from_user.id)
-        await query.edit_message_text(
-            "✍️ Nhập chuỗi văn bản mà bạn muốn chèn **ký tự vô hình U+200B** vào giữa các ký tự.",
-            parse_mode="HTML"
-        )
-        return
     # === Quản lý theo ngày ===
     elif query.data == "menu_date":
         keyboard = InlineKeyboardMarkup([
@@ -155,14 +160,27 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("❓ Không rõ lựa chọn.", parse_mode="HTML")
 
-# === Bắt tin nhắn để xử lý ZW ===
+
+# === Bắt tin nhắn để xử lý ZW (dùng context.user_data) ===
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id in waiting_zw:
-        text = update.message.text
-        # Chèn ký tự vô hình U+200B
-        result = "\u200b".join(list(text))
-        await update.message.reply_text(f"✅ Kết quả: {result}")
-        waiting_zw.remove(update.message.from_user.id)
+    # debug log để bạn thấy hoạt động trên Render
+    user_id = update.effective_user.id
+    text = (update.message.text or "").strip()
+    logger.info("handle_message triggered for user=%s text=%r awaiting=%s",
+                user_id, text, context.user_data.get("awaiting_zw"))
+
+    # Nếu user đang chờ ZW thì xử lý, trả kết quả và gỡ cờ
+    if context.user_data.get("awaiting_zw"):
+        zw_text = "\u200b".join(list(text))
+        # trả cả repr để bạn có thể nhìn thấy ký tự vô hình trong logs nếu cần
+        await update.message.reply_text(f"✅ Kết quả:\n{zw_text}")
+        logger.info("ZW result for user=%s: %r", user_id, zw_text)
+        context.user_data.pop("awaiting_zw", None)
+        return
+
+    # Nếu không phải ZW, function này không làm gì nữa (các handler khác xử lý tiếp)
+    return
+
 
 # === Các lệnh cơ bản: /start, /ping, /menu ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
