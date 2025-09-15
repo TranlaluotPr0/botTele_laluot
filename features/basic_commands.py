@@ -127,7 +127,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # === Bắt tin nhắn để xử lý ZW (dùng context.user_data) ===
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
