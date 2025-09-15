@@ -104,9 +104,15 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-
+# === Handler riêng cho ZW text ===
+async def zw_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = update.message.text
+    if user_id in get_waiting_zw_set():
+        print(f"[ZW] User {user_id} nhập: {text}")
+        await handle_zw_text(update, context)
 # === Đăng ký các handlers ===
-
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, zw_text_router))
 application.add_handler(CallbackQueryHandler(handle_zw_callback, pattern="^cmd_zw$"))
 application.add_handler(CommandHandler("likes", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
