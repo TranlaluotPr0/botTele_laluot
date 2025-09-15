@@ -89,7 +89,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Đăng ký handlers ===
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-application.add_handler(CallbackQueryHandler(handle_zw_callback, pattern="^cmd_zw$"))
+
 
 application.add_handler(CommandHandler("likes", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
