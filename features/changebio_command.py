@@ -1,7 +1,6 @@
 # features/changebio_command.py
 import aiohttp
 import asyncio
-import json
 from aiohttp import ClientConnectorError
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -9,64 +8,68 @@ from telegram.ext import ContextTypes
 API_URL = "https://black-change-bio.vercel.app/get"
 
 async def changebio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Ghép các argument lại
+    # Kiểm tra tham số
     if len(context.args) < 2:
-        await update.message.reply_text("⚠️ Dùng lệnh:\n`/changebio <jwt_token> <new_bio>`\n\n"
-                                        "👉 Dùng `\\n` để xuống dòng.", parse_mode="Markdown")
+        await update.message.reply_text(
+            "⚠️ Dùng lệnh:\n`/changebio <jwt_token> <new_bio>`\n\n👉 Dùng `\\n` để xuống dòng.",
+            parse_mode="Markdown"
+        )
         return
-
+    
     jwt_token = context.args[0]
     bio_text = " ".join(context.args[1:]).strip()
-
-    # Thay \n thành xuống dòng thật
-    bio_text = bio_text.replace("\\n", "\n")
+    bio_text = bio_text.replace("\\n", "\n")  # Hỗ trợ xuống dòng
 
     if not bio_text:
         await update.message.reply_text("⚠️ Bio trống, nhập lại cho chuẩn nha.")
         return
 
-    params = {
-        "access": jwt_token,
-        "text": bio_text
-    }
+    params = {"access": jwt_token, "text": bio_text}
 
     try:
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(API_URL, params=params, timeout=10) as resp:
-                    if resp.status != 200:
-                        await update.message.reply_text(f"❌ API trả về HTTP {resp.status}")
-                        return
-
                     content_type = resp.headers.get("Content-Type", "")
+                    
+                    # Nếu trả JSON
                     if "application/json" in content_type.lower():
                         data = await resp.json(content_type=None)
+                        status_api = data.get("status") or data.get("Status api", "")
+                        msg = data.get("message") or data.get("msg") or ""
+
+                        if status_api.lower() == "error" or resp.status != 200:
+                            response_text = (
+                                "❌ Thay đổi tiểu sử thất bại!\n"
+                                f"Lý do: {msg or 'Không rõ'}"
+                            )
+                        else:
+                            response_text = (
+                                "✅ Tiểu sử đã được thay đổi thành công!\n\n"
+                                f"📝 Tiểu sử mới:\n{bio_text}\n\n"
+                                "Cảm ơn bạn đã dùng bot của TranDatDev"
+                            )
+                    
+                    # Nếu trả về plain text
                     else:
-                        text = await resp.text()
-                        data = {"raw": text}
+                        raw_text = await resp.text()
+                        if resp.status != 200 or "error" in raw_text.lower():
+                            response_text = (
+                                "❌ Thay đổi tiểu sử thất bại!\n"
+                                f"Lý do từ API: {raw_text.strip()}"
+                            )
+                        else:
+                            response_text = (
+                                f"{raw_text.strip()}\n\n"
+                                "Cảm ơn bạn đã dùng bot của TranDatDev"
+                            )
+
+                    await update.message.reply_text(response_text)
+
             except ClientConnectorError:
                 await update.message.reply_text("❌ Không kết nối được API.")
-                return
             except asyncio.TimeoutError:
                 await update.message.reply_text("⏰ API phản hồi quá lâu.")
-                return
-
-        # Format kết quả
-        if isinstance(data, dict):
-            ok = bool(data.get("ok") or data.get("success") or data.get("status") in [1, "ok", True])
-            msg = data.get("message") or data.get("msg")
-
-            if ok or msg:
-                await update.message.reply_text(
-                    f"✅ Bio changed successfully!\n\n📝 New bio:\n{bio_text}\n"
-                    f"{'ℹ️ ' + msg if msg else ''}"
-                )
-            else:
-                data.pop("DEV", None)
-                data.pop("channel", None)
-                await update.message.reply_text("📦 Response:\n" + json.dumps(data, ensure_ascii=False, indent=2))
-        else:
-            await update.message.reply_text("📦 Response:\n" + str(data))
 
     except Exception as e:
         await update.message.reply_text(f"❌ Có lỗi xảy ra: {e}")
