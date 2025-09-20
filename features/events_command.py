@@ -1,65 +1,79 @@
 import aiohttp
 import asyncio
+from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
-from datetime import datetime
 
-API_URL = "https://xp-event-api-s1-w12s.vercel.app/event"
+API_URL = "https://xp-event-api-s1-w12s.vercel.app/event?region={region}"
 
-def format_time(timestamp: int) -> str:
-    """Chuyển timestamp thành ngày giờ VN"""
-    try:
-        return datetime.utcfromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M")
-    except Exception:
-        return "N/A"
+# === Kiểm tra URL hợp lệ cho Telegram ===
+def is_valid_url(url: str) -> bool:
+    if not url:
+        return False
+    if not url.startswith("http"):
+        return False
+    if "<" in url or ">" in url:  # loại bỏ placeholder
+        return False
+    return True
 
+# === Định dạng timestamp thành ngày giờ dễ đọc ===
+def format_time(ts: int) -> str:
+    if not ts:
+        return "?"
+    return datetime.fromtimestamp(ts).strftime("%d-%m-%Y %H:%M")
+
+# === Lệnh /events {region} ===
 async def events_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("⚠️ Dùng: `/events <region>`\n\nVí dụ: `/events vn`", parse_mode="Markdown")
+        await update.message.reply_text("⚠️ Dùng lệnh: `/events vn` hoặc `/events bd`", parse_mode="Markdown")
         return
 
-    region = context.args[0].lower()
-    params = {"region": region}
+    region = context.args[0].upper()
 
+    url = API_URL.format(region=region)
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(API_URL, params=params, timeout=10) as resp:
+            async with session.get(url, timeout=10) as resp:
                 if resp.status != 200:
                     await update.message.reply_text(f"❌ API trả về lỗi HTTP {resp.status}")
                     return
                 data = await resp.json()
-
-        if not data.get("success"):
-            await update.message.reply_text("❌ API không trả về dữ liệu hợp lệ.")
-            return
-
-        events = data.get("events", [])
-        if not events:
-            await update.message.reply_text("📭 Không có sự kiện nào trong khu vực này.")
-            return
-
-        text_lines = [f"📌 **Danh sách sự kiện [{region.upper()}]:**\n"]
-        buttons = []
-
-        for i, event in enumerate(events[:10], start=1):  # Giới hạn 10 sự kiện cho gọn
-            title = event.get("Title", "Không có tên")
-            start = format_time(event.get("Start", 0))
-            end = format_time(event.get("End", 0))
-            link = event.get("link", None)
-            banner = event.get("Banner", None)
-
-            text_lines.append(f"🎉 {i}. *{title}*")
-            text_lines.append(f"   🕒 {start} → {end}")
-
-            if link:
-                buttons.append([InlineKeyboardButton(f"🔗 {title}", url=link)])
-            elif banner:
-                buttons.append([InlineKeyboardButton(f"🖼 {title}", url=banner)])
-
-        reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
-        await update.message.reply_text("\n".join(text_lines), parse_mode="Markdown", reply_markup=reply_markup)
-
     except asyncio.TimeoutError:
         await update.message.reply_text("⏰ API phản hồi quá lâu.")
+        return
     except Exception as e:
-        await update.message.reply_text(f"❌ Lỗi: {e}")
+        await update.message.reply_text(f"❌ Lỗi khi gọi API: {e}")
+        return
+
+    events = data.get("events", [])
+    if not events:
+        await update.message.reply_text("⚠️ Không có sự kiện nào trong khu vực này.")
+        return
+
+    text_lines = [f"📅 **Danh sách sự kiện ({region})**:"]
+    buttons = []
+
+    for i, event in enumerate(events[:10], start=1):  # giới hạn 10 sự kiện
+        title = event.get("Title", "Không có tên")
+        start = format_time(event.get("Start", 0))
+        end = format_time(event.get("End", 0))
+        link = event.get("link", None)
+        banner = event.get("Banner", None)
+
+        text_lines.append(f"\n🎉 {i}. *{title}*")
+        text_lines.append(f"   🕒 {start} → {end}")
+
+        # Ưu tiên tạo button từ link chính
+        if is_valid_url(link):
+            buttons.append([InlineKeyboardButton(f"🔗 {title}", url=link)])
+        elif is_valid_url(banner):
+            buttons.append([InlineKeyboardButton(f"🖼 {title}", url=banner)])
+        else:
+            # Nếu URL lỗi thì in ra text cho người dùng copy
+            if link:
+                text_lines.append(f"   🔗 {link}")
+            if banner:
+                text_lines.append(f"   🖼 {banner}")
+
+    reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
+    await update.message.reply_text("\n".join(text_lines), parse_mode="Markdown", reply_markup=reply_markup)
