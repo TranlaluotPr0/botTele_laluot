@@ -1,6 +1,6 @@
 import aiohttp
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 
@@ -16,11 +16,12 @@ def is_valid_url(url: str) -> bool:
         return False
     return True
 
-# === Định dạng timestamp thành ngày giờ dễ đọc ===
+# === Định dạng timestamp thành ngày giờ dễ đọc (UTC+7 cho VN) ===
 def format_time(ts: int) -> str:
     if not ts:
         return "?"
-    return datetime.fromtimestamp(ts).strftime("%d-%m-%Y %H:%M")
+    tz_vn = timezone(timedelta(hours=7))  # múi giờ VN (GMT+7)
+    return datetime.fromtimestamp(ts, tz=tz_vn).strftime("%d-%m-%Y %H:%M")
 
 # === Lệnh /events {region} ===
 async def events_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
