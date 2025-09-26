@@ -25,16 +25,28 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return
                 data = await resp.json()
 
-        # Format response
-        reply = (
-            f"✅ Like thành công!\n\n"
-            f"👤 Nickname: {data.get('name', 'Unknown')}\n"
-            f"🆔 UID: {data.get('uid')}\n"
-            f"❤️ Likes trước: {data.get('likes_before')}\n"
-            f"➕ Likes thêm: {data.get('likes_added')}\n"
-            f"📈 Likes sau: {data.get('likes_after')}\n\n"
-            f"Cảm ơn bạn đã sử dụng Bot của TranDatDev 🙏"
-        )
+        # Check nếu không thêm được like
+        likes_added = data.get("likes_added", 0)
+        name = data.get("name", "Unknown")
+        uid = data.get("uid", "?")
+
+        if likes_added == 0:
+            reply = (
+                f"👤 Nickname: {name}\n"
+                f"🆔 UID: {uid}\n\n"
+                "❌ Hôm nay đã tối đa lượt like, vui lòng thử ID khác."
+            )
+        else:
+            reply = (
+                f"✅ Like thành công!\n\n"
+                f"👤 Nickname: {name}\n"
+                f"🆔 UID: {uid}\n"
+                f"❤️ Likes trước: {data.get('likes_before')}\n"
+                f"➕ Likes thêm: {likes_added}\n"
+                f"📈 Likes sau: {data.get('likes_after')}\n\n"
+                f"Cảm ơn bạn đã sử dụng Bot của TranDatDev 🙏"
+            )
+
         await update.message.reply_text(reply)
 
     except asyncio.TimeoutError:
