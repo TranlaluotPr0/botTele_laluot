@@ -19,7 +19,7 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(API_URL, params=params, timeout=10) as resp:
+            async with session.get(API_URL, params=params, timeout=15) as resp:
                 if resp.status != 200:
                     await update.message.reply_text(f"❌ API trả về HTTP {resp.status}")
                     return
@@ -30,14 +30,14 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"✅ Like thành công!\n\n"
             f"👤 Nickname: {data.get('name', 'Unknown')}\n"
             f"🆔 UID: {data.get('uid')}\n"
-            f"❤️ Likes trước: {data.get('likes_before', 'N/A')}\n"
-            f"➕ Likes thêm: {data.get('likes_added', 'N/A')}\n"
-            f"📈 Likes sau: {data.get('likes_after', 'N/A')}\n\n"
+            f"❤️ Likes trước: {data.get('likes_before')}\n"
+            f"➕ Likes thêm: {data.get('likes_added')}\n"
+            f"📈 Likes sau: {data.get('likes_after')}\n\n"
             f"Cảm ơn bạn đã sử dụng Bot của TranDatDev 🙏"
         )
         await update.message.reply_text(reply)
 
     except asyncio.TimeoutError:
-        await update.message.reply_text("⏰ API phản hồi quá lâu.")
+        await update.message.reply_text("⏰ API phản hồi quá lâu (timeout).")
     except Exception as e:
         await update.message.reply_text(f"❌ Lỗi: {e}")
