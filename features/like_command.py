@@ -4,18 +4,19 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-# Sửa API URL cho đúng
-API_URL = "https://api-likes-alliff.vercel.app/like"
+API_URL = "https://7ama-likes.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
-        await update.message.reply_text("⚠️ Dùng lệnh: /like <uid>")
+        await update.message.reply_text("⚠️ Dùng lệnh: /like <uid> [server_name]")
         return
     
     uid = context.args[0]
+    server_name = context.args[1] if len(context.args) > 1 else "VN"  # mặc định là VN
 
     params = {
-        "uid": uid
+        "uid": uid,
+        "server_name": server_name
     }
 
     try:
@@ -37,7 +38,8 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if likes_added == 0:
             reply = (
                 f"👤 Nickname: {name}\n"
-                f"🆔 UID: {uid}\n\n"
+                f"🆔 UID: {uid}\n"
+                f"🌍 Server: {server_name}\n\n"
                 "❌ Hôm nay đã tối đa lượt like hoặc không thể thêm like."
             )
         else:
@@ -45,6 +47,7 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"✅ Like thành công!\n\n"
                 f"👤 Nickname: {name}\n"
                 f"🆔 UID: {uid}\n"
+                f"🌍 Server: {server_name}\n"
                 f"❤️ Likes trước: {likes_before}\n"
                 f"➕ Likes thêm: {likes_added}\n"
                 f"📈 Likes sau: {likes_after}\n\n"
