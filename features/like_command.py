@@ -4,7 +4,8 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-API_URL = "https://api-likes-alliff-v3.vercel.app/like"
+# Sửa API URL cho đúng
+API_URL = "https://api-likes-alliff.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
@@ -25,25 +26,28 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return
                 data = await resp.json()
 
-        # Check nếu không thêm được like
+        # Lấy dữ liệu từ API
         likes_added = data.get("likes_added", 0)
+        likes_before = data.get("likes_before", "?")
+        likes_after = data.get("likes_after", "?")
         name = data.get("name", "Unknown")
         uid = data.get("uid", "?")
 
+        # Nếu không thêm được like
         if likes_added == 0:
             reply = (
                 f"👤 Nickname: {name}\n"
                 f"🆔 UID: {uid}\n\n"
-                "❌ Hôm nay đã tối đa lượt like, vui lòng thử ID khác."
+                "❌ Hôm nay đã tối đa lượt like hoặc không thể thêm like."
             )
         else:
             reply = (
                 f"✅ Like thành công!\n\n"
                 f"👤 Nickname: {name}\n"
                 f"🆔 UID: {uid}\n"
-                f"❤️ Likes trước: {data.get('likes_before')}\n"
+                f"❤️ Likes trước: {likes_before}\n"
                 f"➕ Likes thêm: {likes_added}\n"
-                f"📈 Likes sau: {data.get('likes_after')}\n\n"
+                f"📈 Likes sau: {likes_after}\n\n"
                 f"Cảm ơn bạn đã sử dụng Bot của TranDatDev 🙏"
             )
 
