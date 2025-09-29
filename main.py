@@ -13,7 +13,7 @@ from telegram.ext import (
 
 from features.events_command import events_command
 from features.basic_commands import handle_message, menu_callback, start, ping, fallback_menu
-
+from features.jwt_command import jwt_command
 from features.likes_command import likes_command
 from features.additem_command import additem_command
 from features.sp_command import sp_command
@@ -91,6 +91,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Đăng ký handlers ===
 
+application.add_handler(CommandHandler("jwt", jwt_command))
 application.add_handler(CommandHandler("events", events_command))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 application.add_handler(CommandHandler("likes", likes_command))
