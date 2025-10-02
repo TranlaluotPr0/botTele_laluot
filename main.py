@@ -11,7 +11,7 @@ from telegram.ext import (
 
 # === Import các chức năng còn tồn tại ===
 from aiogram import Bot, Dispatcher, executor, types
-from 2fa_command import register_handlers
+from command_2fa import register_handlers
 # === Import các chức năng còn tồn tại ===
 from features.events_command import events_command
 from features.basic_commands import handle_message, menu_callback, start, ping, fallback_menu
