@@ -60,5 +60,5 @@ def register_handlers(application):
     from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler
 
     application.add_handler(CommandHandler("2fa", cmd_2fa))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Filters.reply, receive_key))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_key))
     application.add_handler(CallbackQueryHandler(refresh_otp, pattern="refresh_otp"))
