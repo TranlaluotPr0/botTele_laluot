@@ -94,7 +94,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 application.add_handler(CommandHandler("jwt", jwt_command))
 application.add_handler(CommandHandler("events", events_command))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-application.add_handler(CommandHandler("likes", likes_command))
+application.add_handler(CommandHandler("ok", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
 application.add_handler(CommandHandler("sp", sp_command))
 application.add_handler(CommandHandler("like", like_command))
