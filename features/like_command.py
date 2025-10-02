@@ -4,21 +4,18 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-# 🔄 API mới
 API_URL = "https://api-likes-alli-ff.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(context.args) < 1:
-        await update.message.reply_text("⚠️ Dùng lệnh: /like <uid> [server_name]")
-        return
-    
-    uid = context.args[0]
-    server_name = context.args[1] if len(context.args) > 1 else "VN"  # mặc định là VN
+    # Lấy command text, ví dụ: /12345 -> "12345"
+    command_text = update.message.text.strip()
+    uid = command_text.replace("/", "")  # bỏ dấu "/"
 
-    params = {
-        "uid": uid,
-        "server_name": server_name
-    }
+    if not uid.isdigit():
+        await update.message.reply_text("⚠️ Vui lòng nhập UID hợp lệ, ví dụ: /123456789")
+        return
+
+    params = {"uid": uid}
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -39,8 +36,7 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if likes_added == 0:
             reply = (
                 f"👤 Nickname: {name}\n"
-                f"🆔 UID: {uid}\n"
-                f"🌍 Server: {server_name}\n\n"
+                f"🆔 UID: {uid}\n\n"
                 "❌ Hôm nay đã tối đa lượt like hoặc không thể thêm like."
             )
         else:
@@ -48,7 +44,6 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"✅ Like thành công!\n\n"
                 f"👤 Nickname: {name}\n"
                 f"🆔 UID: {uid}\n"
-                f"🌍 Server: {server_name}\n"
                 f"❤️ Likes trước: {likes_before}\n"
                 f"➕ Likes thêm: {likes_added}\n"
                 f"📈 Likes sau: {likes_after}\n\n"
