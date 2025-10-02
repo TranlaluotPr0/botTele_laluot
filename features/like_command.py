@@ -1,6 +1,7 @@
 # features/like_command.py
 import aiohttp
 import asyncio
+import re
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -8,7 +9,7 @@ API_URL = "https://api-likes-alli-ff.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
-        await update.message.reply_text("⚠️ Dùng lệnh: /ok <uid>\nVí dụ: /ok 13433788510")
+        await update.message.reply_text("⚠️ Dùng lệnh: /ok <uid>\nVí dụ: /ok 1048702328")
         return
 
     uid = context.args[0]
@@ -22,19 +23,35 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(API_URL, params=params, timeout=15) as resp:
+                text = await resp.text()
+
                 if resp.status != 200:
-                    await update.message.reply_text(f"❌ API trả về HTTP {resp.status}")
+                    await update.message.reply_text(
+                        f"❌ API trả về HTTP {resp.status}\n📦 Nội dung: {text[:500]}"
+                    )
                     return
-                data = await resp.json()
 
-        # Lấy dữ liệu từ API
-        likes_added = data.get("likes_added", 0)
-        likes_before = data.get("likes_before", "?")
-        likes_after = data.get("likes_after", "?")
-        name = data.get("name", "Unknown")
-        uid = data.get("uid", "?")
+        # --- Parse dữ liệu từ plain text ---
+        name_match = re.search(r"Name:\s*(.+)", text)
+        before_match = re.search(r"Likes Before:\s*(\d+)", text)
+        after_match = re.search(r"Likes After:\s*(\d+)", text)
+        added_match = re.search(r"Likes Added:\s*(\d+)", text)
+        uid_match = re.search(r"UID:\s*(\d+)", text)
 
-        # Nếu không thêm được like
+        if not added_match:  # ❌ Không parse được -> gửi toàn bộ nội dung về user
+            await update.message.reply_text(
+                f"⚠️ API trả về nhưng không parse được dữ liệu:\n\n{text[:1500]}"
+            )
+            return
+
+        # Nếu parse thành công
+        name = name_match.group(1).strip() if name_match else "Unknown"
+        likes_before = before_match.group(1) if before_match else "?"
+        likes_after = after_match.group(1) if after_match else "?"
+        likes_added = int(added_match.group(1)) if added_match else 0
+        uid = uid_match.group(1) if uid_match else uid
+
+        # --- Format tin nhắn trả về ---
         if likes_added == 0:
             reply = (
                 f"👤 Nickname: {name}\n"
