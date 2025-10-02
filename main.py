@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng còn tồn tại ===
-from command_2fa import register_handlers as register_2fa_handlers
+from features.command_2fa import register_handlers as register_2fa_handlers
 # === Import các chức năng còn tồn tại ===
 from features.events_command import events_command
 from features.basic_commands import handle_message, menu_callback, start, ping, fallback_menu
