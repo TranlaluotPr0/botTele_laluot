@@ -7,12 +7,14 @@ from telegram.ext import ContextTypes
 API_URL = "https://api-likes-alli-ff.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Lấy command text, ví dụ: /12345 -> "12345"
-    command_text = update.message.text.strip()
-    uid = command_text.replace("/", "")  # bỏ dấu "/"
+    if len(context.args) < 1:
+        await update.message.reply_text("⚠️ Dùng lệnh: /ok <uid>\nVí dụ: /ok 13433788510")
+        return
+
+    uid = context.args[0]
 
     if not uid.isdigit():
-        await update.message.reply_text("⚠️ Vui lòng nhập UID hợp lệ, ví dụ: /123456789")
+        await update.message.reply_text("⚠️ UID phải là số, ví dụ: /ok 123456789")
         return
 
     params = {"uid": uid}
