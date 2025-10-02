@@ -1,35 +1,64 @@
-# 2fa_command.py
+# command_2fa.py
+import logging
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import ContextTypes
 
-from aiogram import types
-from aiogram.dispatcher import Dispatcher
 import pyotp
+
+# logging để debug
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 user_keys = {}
 
-async def cmd_2fa(message: types.Message):
-    markup = types.ForceReply()
-    await message.reply("Nhập key 2FA:", reply_markup=markup)
+async def cmd_2fa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📋 Nhập key 2FA của bạn:",
+        reply_markup=None
+    )
+    return
 
-async def receive_key(message: types.Message):
-    key = message.text.strip()
-    user_keys[message.from_user.id] = key
+async def receive_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    key = update.message.text.strip()
+    user_id = update.effective_user.id
+    user_keys[user_id] = key
     totp = pyotp.TOTP(key)
     otp = totp.now()
-    markup = types.InlineKeyboardMarkup().add(
-        types.InlineKeyboardButton("Làm mới OTP", callback_data="refresh_otp")
-    )
-    await message.reply(f"Mã OTP hiện tại: `{otp}`", reply_markup=markup, parse_mode="Markdown")
 
-async def refresh_otp(callback_query: types.CallbackQuery):
-    key = user_keys.get(callback_query.from_user.id)
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Làm mới OTP", callback_data="refresh_otp")]
+    ])
+    await update.message.reply_text(
+        f"Mã OTP hiện tại: `{otp}`",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+async def refresh_otp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    key = user_keys.get(user_id)
+    if not key:
+        await query.edit_message_text("❗ Chưa có key 2FA. Vui lòng nhập lại lệnh /2fa")
+        return
+
     totp = pyotp.TOTP(key)
     otp = totp.now()
-    markup = types.InlineKeyboardMarkup().add(
-        types.InlineKeyboardButton("Làm mới OTP", callback_data="refresh_otp")
-    )
-    await callback_query.message.edit_text(f"Mã OTP hiện tại: `{otp}`", reply_markup=markup, parse_mode="Markdown")
 
-def register_handlers(dp: Dispatcher):
-    dp.register_message_handler(cmd_2fa, commands=['2fa'])
-    dp.register_message_handler(receive_key, lambda message: message.reply_to_message and 'Nhập key 2FA' in message.reply_to_message.text)
-    dp.register_callback_query_handler(refresh_otp, lambda c: c.data == "refresh_otp")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Làm mới OTP", callback_data="refresh_otp")]
+    ])
+
+    await query.edit_message_text(
+        f"Mã OTP hiện tại: `{otp}`",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+def register_handlers(application):
+    from telegram.ext import CommandHandler, MessageHandler, filters, CallbackQueryHandler
+
+    application.add_handler(CommandHandler("2fa", cmd_2fa))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Filters.reply, receive_key))
+    application.add_handler(CallbackQueryHandler(refresh_otp, pattern="refresh_otp"))
