@@ -10,7 +10,9 @@ from telegram.ext import (
 )
 
 # === Import các chức năng còn tồn tại ===
-
+from aiogram import Bot, Dispatcher, executor, types
+from 2fa_command import register_handlers
+# === Import các chức năng còn tồn tại ===
 from features.events_command import events_command
 from features.basic_commands import handle_message, menu_callback, start, ping, fallback_menu
 from features.jwt_command import jwt_command
@@ -90,7 +92,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 # === Đăng ký handlers ===
-
+register_handlers(dp)
 application.add_handler(CommandHandler("jwt", jwt_command))
 application.add_handler(CommandHandler("events", events_command))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
