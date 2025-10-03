@@ -41,7 +41,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "menu_zw":
         context.user_data["awaiting_zw"] = True
         await query.edit_message_text(
-            "✍️ Nhập chuỗi văn bản mà bạn muốn chèn <b>ký tự vô hình U+200B</b> vào giữa các ký tự.",
+            "✍️ Nhập chuỗi văn bản mà bạn muốn chèn <b>ký tự vô hình U+2063</b> vào giữa các ký tự.",
             parse_mode="HTML"
         )
         return
