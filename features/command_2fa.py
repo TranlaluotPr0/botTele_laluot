@@ -32,11 +32,17 @@ def normalize_key(key: str) -> str:
 
 
 async def cmd_2fa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # bật cờ chờ nhập key
+    context.user_data["waiting_for_2fa"] = True
     await update.message.reply_text("📋 Nhập key 2FA của bạn:")
     return
 
 
 async def receive_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Nếu không phải đang chờ nhập key thì bỏ qua
+    if not context.user_data.get("waiting_for_2fa", False):
+        return  
+
     key = update.message.text.strip()
     user_id = update.effective_user.id
 
@@ -46,6 +52,9 @@ async def receive_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         totp = pyotp.TOTP(clean_key)
         otp = totp.now()
+
+        # Sau khi nhập key thành công thì tắt cờ
+        context.user_data["waiting_for_2fa"] = False
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("Làm mới OTP", callback_data="refresh_otp")]
@@ -59,6 +68,7 @@ async def receive_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         await update.message.reply_text(f"❗ Key 2FA không hợp lệ!\nChi tiết: {e}")
+        # Giữ cờ True để user nhập lại
 
 
 async def refresh_otp(update: Update, context: ContextTypes.DEFAULT_TYPE):
