@@ -94,7 +94,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 register_2fa_handlers(application)
 application.add_handler(CommandHandler("jwt", jwt_command))
 application.add_handler(CommandHandler("events", events_command))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 application.add_handler(CommandHandler("ok", likes_command))
 application.add_handler(CommandHandler("additem", additem_command))
 application.add_handler(CommandHandler("sp", sp_command))
@@ -106,6 +105,7 @@ application.add_handler(MessageHandler(filters.Regex("^/menu$"), fallback_menu))
 application.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu|cmd|loc)_"))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
