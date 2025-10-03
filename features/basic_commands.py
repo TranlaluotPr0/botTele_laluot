@@ -133,14 +133,23 @@ logger = logging.getLogger(__name__)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
     text = (update.message.text or "").strip()
+
+    # Debug log đầy đủ
+    logger.info(
+        f"[DEBUG] handle_message | user_id={user_id}, chat_id={chat_id}, "
+        f"text='{text}', awaiting_zw={context.user_data.get('awaiting_zw')}"
+    )
+
     if context.user_data.get("awaiting_zw"):
-        zw_char = "\u2063"  # ký tự Word Joiner U+2063
+        zw_char = "\u2063"  # Invisible Separator (U+2063)
         zw_text = zw_char.join(list(text))
-        logger.info(f"user_id={user_id} text='{text}' len={len(text)} zw_text_len={len(zw_text)}")
+        logger.info(f"[ZW] Generated text | original='{text}' | zw='{zw_text}'")
         await update.message.reply_text(zw_text)
         context.user_data.pop("awaiting_zw", None)
         return
+
 
 
 
