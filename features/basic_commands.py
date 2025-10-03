@@ -135,27 +135,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = (update.message.text or "").strip()
 
-    # Nếu đang chờ input cho ZW
+    # ✅ Thử trả về để xem hàm có chạy không
+    await update.message.reply_text(f"[DEBUG] handle_message nhận được: '{text}'")
+
     if context.user_data.get("awaiting_zw"):
-        zw_char = "\u2063"  # ký tự Word Joiner U+2063
+        zw_char = "\u2063"  # Zero Width Space
         zw_text = zw_char.join(list(text))
 
-        # Debug log ra console
-        logger.info(f"[ZW_DEBUG] user_id={user_id}, text='{text}', len={len(text)}, zw_text_len={len(zw_text)}")
-
-        # Debug log trả về chat luôn
-        await update.message.reply_text(
-            f"[ZW_DEBUG]\nuser_id={user_id}\ntext='{text}'\nlen={len(text)}\nzw_text_len={len(zw_text)}",
-            parse_mode="HTML"
+        debug_msg = (
+            f"[ZW_DEBUG]\n"
+            f"user_id={user_id}\n"
+            f"text='{text}' (len={len(text)})\n"
+            f"zw_text_len={len(zw_text)}"
         )
-
-        # Trả kết quả ZW
+        await update.message.reply_text(debug_msg)
         await update.message.reply_text(zw_text)
 
-        # Reset state
         context.user_data.pop("awaiting_zw", None)
         return
-
 
 
 # === Các lệnh cơ bản: /start, /ping, /menu ===
