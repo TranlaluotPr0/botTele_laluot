@@ -5,7 +5,8 @@ import re
 from telegram import Update
 from telegram.ext import ContextTypes
 
-API_URL = "https://api-likes-alli-ff.vercel.app/like"
+# 🔗 API mới
+API_URL = "https://ag-team-like-api.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
