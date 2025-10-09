@@ -1,7 +1,6 @@
 # features/like_command.py
 import aiohttp
 import asyncio
-import re
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -10,13 +9,12 @@ API_URL = "https://ag-team-like-api.vercel.app/like"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
-        await update.message.reply_text("⚠️ Dùng lệnh: /ok <uid>\nVí dụ: /ok 1048702328")
+        await update.message.reply_text("⚠️ Dùng lệnh: /like <uid>\nVí dụ: /like 1048702328")
         return
 
     uid = context.args[0]
-
     if not uid.isdigit():
-        await update.message.reply_text("⚠️ UID phải là số, ví dụ: /ok 123456789")
+        await update.message.reply_text("⚠️ UID phải là số, ví dụ: /like 123456789")
         return
 
     params = {"uid": uid}
@@ -24,35 +22,30 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(API_URL, params=params, timeout=15) as resp:
-                text = await resp.text()
-
                 if resp.status != 200:
+                    text = await resp.text()
                     await update.message.reply_text(
                         f"❌ API trả về HTTP {resp.status}\n📦 Nội dung: {text[:500]}"
                     )
                     return
 
-        # --- Parse dữ liệu từ plain text ---
-        name_match = re.search(r"Name:\s*(.+)", text)
-        before_match = re.search(r"Likes Before:\s*(\d+)", text)
-        after_match = re.search(r"Likes After:\s*(\d+)", text)
-        added_match = re.search(r"Likes Added:\s*(\d+)", text)
-        uid_match = re.search(r"UID:\s*(\d+)", text)
+                data = await resp.json(content_type=None)  # 👈 Parse JSON
 
-        if not added_match:  # ❌ Không parse được -> gửi toàn bộ nội dung về user
+        # --- Kiểm tra dữ liệu ---
+        if not isinstance(data, dict) or "LikesGivenByAPI" not in data:
             await update.message.reply_text(
-                f"⚠️ API trả về nhưng không parse được dữ liệu:\n\n{text[:1500]}"
+                f"⚠️ API trả về nhưng không đúng định dạng JSON:\n\n{data}"
             )
             return
 
-        # Nếu parse thành công
-        name = name_match.group(1).strip() if name_match else "Unknown"
-        likes_before = before_match.group(1) if before_match else "?"
-        likes_after = after_match.group(1) if after_match else "?"
-        likes_added = int(added_match.group(1)) if added_match else 0
-        uid = uid_match.group(1) if uid_match else uid
+        # --- Lấy dữ liệu ---
+        name = data.get("PlayerNickname", "Unknown")
+        uid = data.get("UID", uid)
+        likes_before = data.get("LikesBefore", "?")
+        likes_after = data.get("LikesAfter", "?")
+        likes_added = data.get("LikesGivenByAPI", 0)
 
-        # --- Format tin nhắn trả về ---
+        # --- Format tin nhắn ---
         if likes_added == 0:
             reply = (
                 f"👤 Nickname: {name}\n"
@@ -75,4 +68,4 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except asyncio.TimeoutError:
         await update.message.reply_text("⏰ API phản hồi quá lâu (timeout).")
     except Exception as e:
-        await update.message.reply_text(f"❌ Lỗi: {e}")
+        await update.message.reply_text(f"❌ Lỗi: {type(e).__name__}: {e}")
