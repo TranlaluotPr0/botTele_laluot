@@ -92,6 +92,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Đăng ký handlers ===
 register_2fa_handlers(application)
+application.add_handler(CommandHandler("autolike", autolike_command))
+application.add_handler(CommandHandler("list_autolike", list_autolike_command))
+application.add_handler(CommandHandler("cancel_autolike", cancel_autolike_command))
+# === Đăng ký handlers ===
 application.add_handler(CommandHandler("jwt", jwt_command))
 application.add_handler(CommandHandler("events", events_command))
 application.add_handler(CommandHandler("likes", likes_command))
