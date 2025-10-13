@@ -10,6 +10,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng còn tồn tại ===
+from features.autolike import autolike_command, list_autolike_command, cancel_autolike_command
 from features.command_2fa import register_handlers as register_2fa_handlers
 # === Import các chức năng còn tồn tại ===
 from features.events_command import events_command
