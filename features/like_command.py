@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 # 🔗 API mới
-API_URL = "https://ag-team-like-api.vercel.app/like"
+API_URL = "http://47.84.86.76:1304/likes"
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
@@ -17,7 +17,10 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ UID phải là số, ví dụ: /like 123456789")
         return
 
-    params = {"uid": uid}
+    params = {
+        "uid": uid,
+        "keys": "gaycow"
+    }
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -29,23 +32,23 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     return
 
-                data = await resp.json(content_type=None)  # 👈 Parse JSON
+                data = await resp.json(content_type=None)
 
-        # --- Kiểm tra dữ liệu ---
-        if not isinstance(data, dict) or "LikesGivenByAPI" not in data:
+        # --- Kiểm tra dữ liệu trả về ---
+        if not isinstance(data, dict):
             await update.message.reply_text(
                 f"⚠️ API trả về nhưng không đúng định dạng JSON:\n\n{data}"
             )
             return
 
-        # --- Lấy dữ liệu ---
+        # --- Lấy dữ liệu từ API ---
         name = data.get("PlayerNickname", "Unknown")
         uid = data.get("UID", uid)
         likes_before = data.get("LikesBefore", "?")
         likes_after = data.get("LikesAfter", "?")
         likes_added = data.get("LikesGivenByAPI", 0)
 
-        # --- Format tin nhắn ---
+        # --- Format phản hồi ---
         if likes_added == 0:
             reply = (
                 f"👤 Nickname: {name}\n"
