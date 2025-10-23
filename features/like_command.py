@@ -16,7 +16,7 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ UID phải là số, ví dụ: /like 123456789")
         return
 
-    params = {"uid": uid, "keys": "gaycow"}
+    params = {"uid": uid, "keys": "cowgay"}
 
     try:
         async with aiohttp.ClientSession() as session:
