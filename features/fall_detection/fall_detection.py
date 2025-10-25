@@ -1,50 +1,43 @@
-
+import os
 import cv2
-import torch
 import asyncio
 import threading
 from telegram import Bot
+from ultralytics import YOLO
 
 # ---------------- CONFIG ----------------
-MODEL_PATH = "yolov8n-pose.pt"
-DRIVE_FILE_ID = "1TZFbiO_shTa7yPKHkkm6KiQ9j9-YYNfn"
-MODEL_URL = f"https://drive.google.com/uc?export=download&id={DRIVE_FILE_ID}"
-# Nếu có nhiều camera, bạn thêm ở đây
-CAMERAS = {
-    "Cam1": "rtsp://admin:admin@192.168.1.2:554/stream1",
-    # "Cam2": 0,  # ví dụ webcam
-}
+MODEL_PATH = "features/fall_detection/models/yolov8n-pose.pt"
 
+# Thêm nhiều camera nếu cần
+CAMERAS = {
+    "Cam1": 0,  # webcam
+    "Cam2": "rtsp://admin:pass@192.168.1.2:554/stream"
+}
 # ----------------------------------------
-model = torch.hub.load('ultralytics/yolov8', 'custom', path=MODEL_PATH)
+
+# Kiểm tra model local
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError(f"❌ Không tìm thấy model tại: {MODEL_PATH}\n"
+                            f"👉 Hãy chắc rằng file .pt nằm đúng vị trí này.")
+
+print("🚀 Đang tải model YOLO từ local...")
+model = YOLO(MODEL_PATH)
+print("✅ Model YOLO đã sẵn sàng!")
+
 fall_detection_running = False
 
-def download_model():
-    """Tự động tải model YOLO nếu chưa có."""
-    if not os.path.exists(MODEL_PATH):
-        print("⬇️ Đang tải model YOLO từ Google Drive...")
-        response = requests.get(MODEL_URL, stream=True)
-        total = int(response.headers.get("content-length", 0))
-        with open(MODEL_PATH, "wb") as f:
-            downloaded = 0
-            for data in response.iter_content(1024 * 1024):
-                f.write(data)
-                downloaded += len(data)
-                percent = downloaded * 100 / total if total > 0 else 0
-                print(f"\r   ➜ {percent:.1f}%...", end="")
-        print("\n✅ Đã tải xong model YOLO.")
-
-download_model()
-model = torch.hub.load('ultralytics/yolov8', 'custom', path=MODEL_PATH)
 
 async def send_fall_alert(bot: Bot, chat_id: int, frame, cam_name: str):
     """Gửi ảnh cảnh báo ngã đến Telegram"""
-    _, buffer = cv2.imencode(".jpg", frame)
-    await bot.send_photo(
-        chat_id=chat_id,
-        photo=buffer.tobytes(),
-        caption=f"🚨 Phát hiện NGÃ từ **{cam_name}**"
-    )
+    try:
+        _, buffer = cv2.imencode(".jpg", frame)
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=buffer.tobytes(),
+            caption=f"🚨 Phát hiện NGÃ từ **{cam_name}**"
+        )
+    except Exception as e:
+        print(f"⚠️ Lỗi gửi ảnh Telegram: {e}")
 
 
 def detect_fall_pose(keypoints):
@@ -57,7 +50,7 @@ def detect_fall_pose(keypoints):
         if not y:
             return False
         y_range = max(y) - min(y)
-        return y_range < 80  # khoảng cách nhỏ => ngã
+        return y_range < 80  # nhỏ → người đang nằm
     except Exception:
         return False
 
@@ -74,21 +67,17 @@ def process_camera(cam_name, cam_url, bot, chat_id):
     while fall_detection_running:
         ret, frame = cap.read()
         if not ret:
+            print(f"⚠️ Không đọc được khung hình từ {cam_name}")
             break
 
-        results = model(frame)
-        for person in results:
-            try:
-                keypoints = person['keypoints']
+        # Dự đoán tư thế
+        results = model(frame, verbose=False)
+        for r in results:
+            if r.keypoints is not None:
+                keypoints = r.keypoints.xy.cpu().numpy()[0]
                 if detect_fall_pose(keypoints):
+                    print(f"🚨 Phát hiện ngã từ {cam_name}")
                     asyncio.run(send_fall_alert(bot, chat_id, frame, cam_name))
-            except Exception:
-                continue
-
-        # Nếu muốn hiển thị xem trực tiếp
-        cv2.imshow(f"{cam_name}", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
 
     cap.release()
     cv2.destroyAllWindows()
@@ -96,18 +85,22 @@ def process_camera(cam_name, cam_url, bot, chat_id):
 
 
 def start_fall_detection(bot: Bot, chat_id: int):
-    """Hàm khởi động"""
+    """Bắt đầu phát hiện ngã"""
     global fall_detection_running
     if fall_detection_running:
         return "⚠️ Hệ thống phát hiện ngã đang chạy!"
     fall_detection_running = True
     for cam_name, cam_url in CAMERAS.items():
-        threading.Thread(target=process_camera, args=(cam_name, cam_url, bot, chat_id), daemon=True).start()
+        threading.Thread(
+            target=process_camera,
+            args=(cam_name, cam_url, bot, chat_id),
+            daemon=True
+        ).start()
     return "✅ Đã bật phát hiện ngã!"
 
 
 def stop_fall_detection():
-    """Hàm dừng"""
+    """Dừng phát hiện ngã"""
     global fall_detection_running
     fall_detection_running = False
     cv2.destroyAllWindows()
