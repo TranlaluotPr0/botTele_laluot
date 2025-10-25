@@ -7,3 +7,11 @@ pytz
 gspread
 google-auth
 pyotp
+
+# Fall detection dependencies
+ultralytics==8.2.100
+torch>=2.0.0
+torchvision
+opencv-python-headless
+requests
+numpy
