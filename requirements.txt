@@ -9,9 +9,13 @@ google-auth
 pyotp
 
 # Fall detection dependencies
-ultralytics==8.2.100
+
 torch>=2.0.0
 torchvision
-opencv-python-headless
+
 requests
 numpy
+
+
+ultralytics>=8.0.100
+opencv-python-headless
