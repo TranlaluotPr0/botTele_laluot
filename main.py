@@ -10,6 +10,7 @@ from telegram.ext import (
 )
 
 # === Import các chức năng còn tồn tại ===
+from features.fall_detection.fall_detection import start_fall_detection, stop_fall_detection
 from features.auto_like_Ff import autolike_command, list_autolike_command, cancel_autolike_command
 
 from features.command_2fa import register_handlers as register_2fa_handlers
@@ -74,7 +75,15 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     received_files.append(data)
     append_to_csv(data)
     print(f"[🖼] Nhận ảnh ({data['size']})")
+# === Xử lý camera ===
+# ví dụ khi dùng python-telegram-bot
+async def fall_start(update, context):
+    msg = start_fall_detection(context.bot, update.effective_chat.id)
+    await update.message.reply_text(msg)
 
+async def fall_stop(update, context):
+    msg = stop_fall_detection()
+    await update.message.reply_text(msg)
 # === Xử lý tin nhắn văn bản ===
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -98,6 +107,9 @@ application.add_handler(CommandHandler("autolike", autolike_command))
 application.add_handler(CommandHandler("list_autolike", list_autolike_command))
 application.add_handler(CommandHandler("cancel_autolike", cancel_autolike_command))
 # === Đăng ký handlers ===
+application.add_handler(CommandHandler("fall_start", fall_start))
+application.add_handler(CommandHandler("fall_stop", fall_stop))
+
 application.add_handler(CommandHandler("jwt", jwt_command))
 application.add_handler(CommandHandler("events", events_command))
 application.add_handler(CommandHandler("likes", likes_command))
