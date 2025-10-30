@@ -25,6 +25,10 @@ async def like_single_uid(uid: str) -> str:
 
     # --- Kiểm tra dữ liệu ---
     if not isinstance(data, dict) or "result" not in data:
+        # Một số lỗi đặc biệt (ví dụ BR_ACCOUNT_MAXLIKES_TODAY)
+        msg = data.get("error") if isinstance(data, dict) else str(data)
+        if "BR_ACCOUNT_MAXLIKES_TODAY" in msg or "tối đa lượt thích" in msg.lower():
+            return f"🚫 UID {uid}: Tài khoản này đã đạt giới hạn lượt thích hôm nay.\n🕐 Thử lại vào ngày mai."
         return f"⚠️ UID {uid}: JSON không hợp lệ.\n{data}"
 
     result = data["result"]
@@ -42,23 +46,31 @@ async def like_single_uid(uid: str) -> str:
     speed = api.get("speeds", "?")
     success = api.get("success", False)
 
-    # --- Format kết quả ---
+    # --- Phân loại kết quả ---
     if not success:
+        # Kiểm tra lỗi giới hạn like
+        if "BR_ACCOUNT_MAXLIKES_TODAY" in str(result) or likes_added == 0:
+            return (
+                f"🚫 UID {uid}: Đã đạt giới hạn lượt thích hôm nay.\n"
+                f"👤 {name}\n🌍 {region}\n🕐 Thử lại vào ngày mai.\n⚡ {speed}"
+            )
         return f"❌ UID {uid}: API báo lỗi. (Tốc độ {speed})"
+
     elif likes_added == 0:
         return (
             f"👤 {name}\n🆔 {uid}\n🌍 {region}\n"
             f"❌ Không thể thêm like (đã đạt giới hạn hoặc lỗi)\n⚡ {speed}"
         )
-    else:
-        return (
-            f"✅ Like thành công cho UID {uid}!\n"
-            f"👤 {name}\n🌍 {region}\n"
-            f"❤️ Trước: {likes_before}\n"
-            f"➕ Thêm: {likes_added}\n"
-            f"📈 Sau: {likes_after}\n"
-            f"⚡ Tốc độ: {speed}"
-        )
+
+    # --- Thành công ---
+    return (
+        f"✅ Like thành công cho UID {uid}!\n"
+        f"👤 {name}\n🌍 {region}\n"
+        f"❤️ Trước: {likes_before}\n"
+        f"➕ Thêm: {likes_added}\n"
+        f"📈 Sau: {likes_after}\n"
+        f"⚡ Tốc độ: {speed}"
+    )
 
 
 async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -80,6 +92,6 @@ async def like_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for i, uid in enumerate(uids, start=1):
         reply = await like_single_uid(uid)
         await update.message.reply_text(f"📍 {i}/{len(uids)}\n{reply}")
-        await asyncio.sleep(2)  # nghỉ 2s giữa các request để tránh bị chặn
+        await asyncio.sleep(2)
 
     await update.message.reply_text("✅ Hoàn tất tất cả UID!")
