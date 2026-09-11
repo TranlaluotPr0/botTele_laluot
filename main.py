@@ -128,7 +128,7 @@ application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 # Thêm vào danh sách các handlers hiện có:
-app.add_handler(CommandHandler("ask", ask_command))
+application.add_handler(CommandHandler("ask", ask_command))
 
 # === Webhook Flask routes ===
 @app.route(WEBHOOK_PATH, methods=["POST"])
