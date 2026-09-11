@@ -27,6 +27,9 @@ from features.tags import handle_tag_input, get_waiting_tag_action
 from features.file_handlers import handle_received_file, load_from_csv, append_to_csv
 from features import import_export
 
+from features.chat_command import ask_command
+from telegram.ext import CommandHandler
+
 # === Biến toàn cục ===
 event_loop = None
 received_files = []
