@@ -1,12 +1,12 @@
 python-telegram-bot[webhooks]==20.7
 python-dotenv
-aiohttp==3.9.3
 flask[async]
 asgiref
 pytz
 gspread
 google-auth
 pyotp
+aiohttp>=3.10.0
 openai
 # Fall detection dependencies
 
